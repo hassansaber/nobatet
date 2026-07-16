@@ -1,14 +1,12 @@
 import { Suspense } from 'react';
-import { AuthForm } from '@/components/auth/AuthForm';
+import { UnifiedAuth } from '@/components/auth/UnifiedAuth';
 
-export const metadata = {
-  title: 'ورود',
-};
+export const metadata = { title: 'ورود یا ثبت‌نام' };
 
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="text-sm text-muted-foreground">در حال بارگذاری...</div>}>
-      <AuthForm mode="login" />
+      <UnifiedAuth defaultRole="customer" />
     </Suspense>
   );
 }

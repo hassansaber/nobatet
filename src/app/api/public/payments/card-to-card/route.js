@@ -4,9 +4,9 @@ import { submitCardToCardProof } from '@/services/payment';
 
 const schema = z.object({
   bookingId: z.string().uuid(),
-  sourceCardLast4: z
-    .string()
-    .regex(/^\d{4}$/, { message: '۴ رقم آخر کارت مبدأ را وارد کنید' }),
+  sourceCardLast4: z.string().regex(/^\d{4}$/, { message: '۴ رقم آخر کارت مبدأ را وارد کنید' }),
+  transferCode: z.string().max(80).optional().nullable(),
+  transferNote: z.string().max(500).optional().nullable(),
   transferReportedAt: z.string().optional().nullable(),
   receiptImageUrl: z.string().url().optional().nullable().or(z.literal('')),
 });
@@ -31,6 +31,8 @@ export async function POST(request) {
     const result = await submitCardToCardProof({
       bookingId: parsed.data.bookingId,
       sourceCardLast4: parsed.data.sourceCardLast4,
+      transferCode: parsed.data.transferCode || null,
+      transferNote: parsed.data.transferNote || null,
       transferReportedAt: parsed.data.transferReportedAt,
       receiptImageUrl: parsed.data.receiptImageUrl || null,
     });

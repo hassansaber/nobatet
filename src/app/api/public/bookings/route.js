@@ -153,17 +153,18 @@ export async function POST(request) {
       });
     }
 
-    // ─── درگاه sandbox ───
+    // ─── درگاه sandbox ─── fix: always use main app URL, not tenant subdomain
     if (isGateway) {
-      const origin =
-        request.headers.get('origin') ||
+      const baseUrl =
         process.env.NEXT_PUBLIC_APP_URL ||
-        'http://localhost:3000';
+        (process.env.NODE_ENV === 'production'
+          ? 'https://nobatet.com'
+          : 'http://localhost:3001');
 
       const started = await startSandboxGatewayPayment({
         booking: pending.booking,
         amount,
-        returnBase: origin,
+        returnBase: baseUrl,
       });
 
       return NextResponse.json({

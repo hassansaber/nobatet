@@ -99,6 +99,10 @@ export const payments = pgTable(
     gatewayRef: varchar('gateway_ref', { length: 120 }),
     /** ۴ رقم آخر کارت مبدأ (کارت‌به‌کارت) */
     sourceCardLast4: varchar('source_card_last4', { length: 4 }),
+    /** شماره تراکنش / پیگیری */
+    transferCode: varchar('transfer_code', { length: 80 }),
+    /** توضیحات تراکنش شامل تاریخ و زمان */
+    transferNote: text('transfer_note'),
     /** زمان اعلام‌شده واریز توسط مشتری */
     transferReportedAt: timestamp('transfer_reported_at', { withTimezone: true }),
     receiptImageUrl: text('receipt_image_url'),

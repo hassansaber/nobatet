@@ -401,17 +401,37 @@ function interpretResult(resultRaw) {
  * @param {string} to
  * @param {SmsPattern} pattern
  * @param {string[]} vars
+ * @param {{ businessId?: string }} opts
  */
-export async function sendSms(to, pattern, vars = []) {
-  return new MelipayamakProvider().sendByPattern(to, pattern, vars);
+export async function sendSms(to, pattern, vars = [], opts = {}) {
+  const provider = new MelipayamakProvider();
+  const result = await provider.sendByPattern(to, pattern, vars);
+  // async log - don't block failure
+  try {
+    const { db } = await import('@/db');
+    const { smsLogs } = await import('@/db/schema/saas');
+    const rec = result.recId || (result.success ? 'ok' : null);
+    await db.insert(smsLogs).values({
+      businessId: opts.businessId || null,
+      phone: normalizeSmsRecipient(to) || String(to),
+      pattern,
+      bodyId: String(provider.getBodyId(pattern) || ''),
+      status: result.success ? 'sent' : 'failed',
+      providerRef: rec ? String(rec).slice(0, 120) : (result.error || '').slice(0, 120),
+    });
+  } catch (e) {
+    console.warn('[sms] log failed', e?.message);
+  }
+  return result;
 }
 
 /**
  * @param {string} to
  * @param {string|number} code
+ * @param {{ businessId?: string }} opts
  */
-export async function sendOtpSms(to, code) {
-  return sendSms(to, 'otp', [String(code)]);
+export async function sendOtpSms(to, code, opts = {}) {
+  return sendSms(to, 'otp', [String(code)], opts);
 }
 
 function escapeXml(value) {

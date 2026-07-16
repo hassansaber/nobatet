@@ -54,8 +54,10 @@ export async function getPublicBusinessLanding(slug) {
       id: businessMembers.id,
       role: businessMembers.role,
       jobTitle: businessMembers.jobTitle,
+      avatarUrl: businessMembers.avatarUrl,
       firstName: users.firstName,
       lastName: users.lastName,
+      userAvatarUrl: users.avatarUrl,
     })
     .from(businessMembers)
     .innerJoin(users, eq(users.id, businessMembers.userId))
@@ -73,6 +75,9 @@ export async function getPublicBusinessLanding(slug) {
     description: biz.description,
     logoUrl: biz.logoUrl,
     bannerUrl: biz.bannerUrl,
+    galleryUrls: biz.galleryUrls || [],
+    latitude: biz.latitude || null,
+    longitude: biz.longitude || null,
     phone: biz.phone,
     address: biz.address,
     city: biz.city,
@@ -88,6 +93,7 @@ export async function getPublicBusinessLanding(slug) {
       name: [m.firstName, m.lastName].filter(Boolean).join(' ') || 'کارمند',
       jobTitle: m.jobTitle,
       role: m.role,
+      avatarUrl: m.avatarUrl || m.userAvatarUrl || null,
     })),
   };
 }
@@ -276,10 +282,12 @@ export async function listStaff(businessId) {
       userId: businessMembers.userId,
       role: businessMembers.role,
       jobTitle: businessMembers.jobTitle,
+      avatarUrl: businessMembers.avatarUrl,
       isActive: businessMembers.isActive,
       firstName: users.firstName,
       lastName: users.lastName,
       phone: users.phone,
+      userAvatarUrl: users.avatarUrl,
     })
     .from(businessMembers)
     .innerJoin(users, eq(users.id, businessMembers.userId))
@@ -394,6 +402,7 @@ export async function updateStaffMember(memberId, businessId, data) {
     .update(businessMembers)
     .set({
       ...(data.jobTitle !== undefined ? { jobTitle: data.jobTitle } : {}),
+      ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
       ...(data.role && ['staff', 'manager'].includes(data.role)
         ? { role: data.role }
         : {}),
@@ -549,9 +558,14 @@ export async function updateBusinessSettings(businessId, data) {
     'cancellationPolicy',
     'cardNumber',
     'cardHolderName',
+    'latitude',
+    'longitude',
   ];
   for (const k of scalar) {
     if (data[k] !== undefined) patch[k] = data[k];
+  }
+  if (data.galleryUrls !== undefined) {
+    patch.galleryUrls = Array.isArray(data.galleryUrls) ? data.galleryUrls : [];
   }
   if (data.depositPercent != null) {
     patch.depositPercent = Math.min(100, Math.max(0, Number(data.depositPercent)));

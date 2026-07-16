@@ -39,6 +39,8 @@ export async function createPaymentForBooking({
       amount,
       gatewayRef: extra.gatewayRef || null,
       sourceCardLast4: extra.sourceCardLast4 || null,
+      transferCode: extra.transferCode || null,
+      transferNote: extra.transferNote || null,
       transferReportedAt: extra.transferReportedAt || null,
       receiptImageUrl: extra.receiptImageUrl || null,
     })
@@ -61,8 +63,15 @@ export async function startSandboxGatewayPayment({ booking, amount, returnBase }
     extra: { gatewayRef: authority },
   });
 
-  const base = returnBase || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const redirectUrl = `${base}/pay/sandbox?authority=${encodeURIComponent(authority)}&paymentId=${payment.id}&amount=${amount}`;
+  // Always use main domain for payment - fixes 404 when booking from tenant subdomain
+  let base = returnBase || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+  // If returnBase is a tenant subdomain (contains .business. or .visitor.), fallback to main domain
+  if (base.includes('.business.') || base.includes('.visitor.') || base.includes('demo.')) {
+    base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
+  }
+  // Ensure no trailing slash
+  base = base.replace(/\/$/, '');
+  const redirectUrl = `${base}/pay/sandbox?authority=${encodeURIComponent(authority)}&paymentId=${payment.id}&amount=${amount}&bookingId=${booking.id}`;
 
   return { ok: true, payment, redirectUrl, authority };
 }
@@ -139,11 +148,13 @@ export async function completeSandboxGatewayPayment({
 }
 
 /**
- * ثبت اطلاعات کارت‌به‌کارت توسط مشتری
+ * ثبت اطلاعات کارت‌به‌کارت توسط مشتری - upgraded Task 12
  */
 export async function submitCardToCardProof({
   bookingId,
   sourceCardLast4,
+  transferCode,
+  transferNote,
   transferReportedAt,
   receiptImageUrl,
 }) {
@@ -187,9 +198,9 @@ export async function submitCardToCardProof({
       .set({
         status: 'pending',
         sourceCardLast4: sourceCardLast4 || payment.sourceCardLast4,
-        transferReportedAt: transferReportedAt
-          ? new Date(transferReportedAt)
-          : new Date(),
+        transferCode: transferCode || payment.transferCode,
+        transferNote: transferNote || payment.transferNote,
+        transferReportedAt: transferReportedAt ? new Date(transferReportedAt) : new Date(),
         receiptImageUrl: receiptImageUrl || payment.receiptImageUrl,
         updatedAt: new Date(),
       })
@@ -202,9 +213,9 @@ export async function submitCardToCardProof({
       amount: booking.depositAmount,
       extra: {
         sourceCardLast4,
-        transferReportedAt: transferReportedAt
-          ? new Date(transferReportedAt)
-          : new Date(),
+        transferCode,
+        transferNote,
+        transferReportedAt: transferReportedAt ? new Date(transferReportedAt) : new Date(),
         receiptImageUrl,
       },
     });
@@ -365,7 +376,7 @@ export async function notifyBookingConfirmed(booking) {
       biz?.name || 'نوبتت',
       dateFa,
       timeFa,
-    ]);
+    ], { businessId: booking.businessId });
 
     // پترن #3: نام مشتری، تاریخ، ساعت، خدمت
     if (biz?.phone) {
@@ -376,7 +387,7 @@ export async function notifyBookingConfirmed(booking) {
           dateFa,
           timeFa,
           svc?.name || 'خدمت',
-        ]);
+        ], { businessId: booking.businessId });
       }
     }
   } catch (err) {
@@ -387,9 +398,9 @@ export async function notifyBookingConfirmed(booking) {
 /**
  * ارسال SMS بدون پرتاب خطا اگر bodyId نباشد
  */
-async function sendSmsSafe(to, pattern, vars) {
+async function sendSmsSafe(to, pattern, vars, opts = {}) {
   if (!to) return { success: false, skipped: true };
-  const result = await sendSms(to, pattern, vars);
+  const result = await sendSms(to, pattern, vars, opts);
   if (!result.success) {
     console.warn('[sms:skip-or-fail]', pattern, result.error);
   }

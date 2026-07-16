@@ -81,6 +81,7 @@ async function sendRemindersInWindow(centerMs, windowMinutes, pattern, errors) {
       customerName: bookings.customerName,
       customerPhone: bookings.customerPhone,
       startsAt: bookings.startsAt,
+      businessId: bookings.businessId,
       businessName: businesses.name,
     })
     .from(bookings)
@@ -103,7 +104,7 @@ async function sendRemindersInWindow(centerMs, windowMinutes, pattern, errors) {
       row.customerName,
       timeFa,
       row.businessName,
-    ]);
+    ], { businessId: row.businessId });
     if (result.success) sent += 1;
     else errors.push(`${pattern}:${row.id}:${result.error}`);
   }

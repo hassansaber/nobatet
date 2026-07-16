@@ -35,6 +35,17 @@ export async function proxy(request) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname.startsWith('/sites') ||
+    pathname.startsWith('/pay') ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/pricing') ||
+    pathname.startsWith('/demo') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/business') ||
+    pathname.startsWith('/staff') ||
+    pathname.startsWith('/visitor') ||
+    pathname.startsWith('/me') ||
     isStaticFile;
 
   // ─── Subdomain routing (wildcard) ───
