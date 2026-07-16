@@ -1,0 +1,11 @@
+{
+  "platform": "next",
+  "app": "nobatet",
+  "port": 3000,
+  "build": {
+    "location": "iran"
+  },
+  "node": {
+    "version": "20"
+  }
+}
