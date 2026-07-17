@@ -23,12 +23,11 @@ export async function POST(request) {
       );
     }
 
-    // promote to business_owner if customer
-    if (session.role === 'customer') {
-      await db
-        .update(users)
-        .set({ role: 'business_owner', updatedAt: new Date() })
-        .where(eq(users.id, session.sub));
+    // promote to business_owner if not already owner/super_admin
+    const isSuper = session.globalRoles?.includes('super_admin') || session.role === 'super_admin';
+    const isOwner = session.memberships?.some((m) => m.role === 'owner') || session.role === 'business_owner';
+    if (!isOwner && !isSuper) {
+      await db.update(users).set({ role: 'business_owner', updatedAt: new Date() }).where(eq(users.id, session.sub));
     }
 
     const result = await createBusiness({

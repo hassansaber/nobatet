@@ -28,7 +28,7 @@ export async function GET(request) {
     }
 
     const access = await assertBusinessAccess(businessId, session.sub);
-    if (!access && session.role !== 'super_admin') {
+    if (!access && !(session.globalRoles?.includes('super_admin') || session.role === 'super_admin')) {
       return NextResponse.json({ ok: false, error: 'دسترسی ندارید' }, { status: 403 });
     }
 
@@ -100,7 +100,7 @@ export async function PATCH(request) {
       'manager',
       'staff',
     ]);
-    if (!access && session.role !== 'super_admin') {
+    if (!access && !(session.globalRoles?.includes('super_admin') || session.role === 'super_admin')) {
       return NextResponse.json({ ok: false, error: 'دسترسی ندارید' }, { status: 403 });
     }
 

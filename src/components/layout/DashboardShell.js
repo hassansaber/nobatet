@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { logoutAction } from '@/app/actions/auth';
 import { cn } from '@/lib/utils';
+import { WorkspaceSwitcher } from '@/components/layout/WorkspaceSwitcher';
 
 const NAV = {
   business_owner: [
@@ -125,14 +126,17 @@ export function DashboardShell({ children, title, role: roleProp }) {
               </p>
             </div>
           </div>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="text-sm font-bold text-muted-foreground hover:text-danger px-3 py-2 rounded-xl hover:bg-red-50 transition-colors"
-            >
-              خروج
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            <WorkspaceSwitcher />
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="text-sm font-bold text-muted-foreground hover:text-danger px-3 py-2 rounded-xl hover:bg-red-50 transition-colors"
+              >
+                خروج
+              </button>
+            </form>
+          </div>
         </div>
         <nav className="mx-auto max-w-6xl px-2 overflow-x-auto">
           <ul className="flex gap-1.5 pb-2.5 min-w-max">

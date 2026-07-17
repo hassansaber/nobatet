@@ -5,30 +5,24 @@ import { users, otpCodes } from '@/db/schema/users';
 import {
   createSession,
   destroySession,
+  buildSessionPayload,
+  dashboardPathForSession,
   hashPassword,
   comparePassword,
-  dashboardPathForRole,
   getSession,
+  incrementTokenVersion,
 } from '@/lib/auth';
 import { generateOtp, normalizeIranPhone } from '@/lib/utils';
 import { sendOtpSms } from '@/services/sms';
 
-const OTP_TTL_MS = 2 * 60 * 1000; // 2 دقیقه
+const OTP_TTL_MS = 2 * 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
-const OTP_RATE_LIMIT_MS = 60 * 1000; // حداقل ۱ دقیقه بین دو درخواست
+const OTP_RATE_LIMIT_MS = 60 * 1000;
 
-/**
- * ارسال OTP با rate-limit ساده
- * @param {string} phoneRaw
- * @param {'login' | 'register' | 'reset_password'} purpose
- */
 export async function requestOtp(phoneRaw, purpose = 'login') {
   const phone = normalizeIranPhone(phoneRaw);
-  if (!phone) {
-    return { ok: false, error: 'شماره موبایل معتبر نیست' };
-  }
+  if (!phone) return { ok: false, error: 'شماره موبایل معتبر نیست' };
 
-  // Rate limit: آخرین OTP استفاده‌نشده در ۱ دقیقه اخیر
   const recent = await db
     .select()
     .from(otpCodes)
@@ -40,188 +34,88 @@ export async function requestOtp(phoneRaw, purpose = 'login') {
     const age = Date.now() - new Date(recent[0].createdAt).getTime();
     if (age < OTP_RATE_LIMIT_MS) {
       const waitSec = Math.ceil((OTP_RATE_LIMIT_MS - age) / 1000);
-      return {
-        ok: false,
-        error: `لطفاً ${waitSec} ثانیه دیگر دوباره تلاش کنید`,
-      };
+      return { ok: false, error: `لطفاً ${waitSec} ثانیه دیگر دوباره تلاش کنید` };
     }
   }
 
-  const existingUser = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.phone, phone))
-    .limit(1);
-
+  const existingUser = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
   const isNewUser = existingUser.length === 0;
-
-  // اگر purpose=register و کاربر هست، یا purpose=login و نیست — همچنان OTP می‌فرستیم
-  // و در verify مسیر را مشخص می‌کنیم (UX بهتر)
 
   const code = generateOtp(5);
   const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
-  await db.insert(otpCodes).values({
-    phone,
-    code,
-    purpose,
-    expiresAt,
-  });
+  await db.insert(otpCodes).values({ phone, code, purpose, expiresAt });
 
   const smsResult = await sendOtpSms(phone, code);
   if (!smsResult.success) {
-    return {
-      ok: false,
-      error: smsResult.error || 'ارسال پیامک ناموفق بود',
-    };
+    return { ok: false, error: smsResult.error || 'ارسال پیامک ناموفق بود' };
   }
 
-  return {
-    ok: true,
-    phone,
-    isNewUser,
-    expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
-  };
+  return { ok: true, phone, isNewUser, expiresInSeconds: Math.floor(OTP_TTL_MS / 1000) };
 }
 
-/**
- * تأیید OTP
- * @param {string} phoneRaw
- * @param {string} code
- * @param {'login' | 'register' | 'reset_password'} purpose
- */
 export async function verifyOtp(phoneRaw, code, purpose = 'login') {
   const phone = normalizeIranPhone(phoneRaw);
-  if (!phone) {
-    return { ok: false, error: 'شماره موبایل معتبر نیست' };
-  }
+  if (!phone) return { ok: false, error: 'شماره موبایل معتبر نیست' };
 
   const rows = await db
     .select()
     .from(otpCodes)
-    .where(
-      and(
-        eq(otpCodes.phone, phone),
-        eq(otpCodes.isUsed, false),
-        eq(otpCodes.purpose, purpose),
-        gt(otpCodes.expiresAt, new Date()),
-      ),
-    )
+    .where(and(eq(otpCodes.phone, phone), eq(otpCodes.isUsed, false), eq(otpCodes.purpose, purpose), gt(otpCodes.expiresAt, new Date())))
     .orderBy(desc(otpCodes.createdAt))
     .limit(1);
 
   const otp = rows[0];
-  if (!otp) {
-    return { ok: false, error: 'کد تأیید منقضی یا نامعتبر است' };
-  }
+  if (!otp) return { ok: false, error: 'کد تأیید منقضی یا نامعتبر است' };
 
   const attempts = Number(otp.attempts || '0');
   if (attempts >= OTP_MAX_ATTEMPTS) {
-    await db
-      .update(otpCodes)
-      .set({ isUsed: true })
-      .where(eq(otpCodes.id, otp.id));
+    await db.update(otpCodes).set({ isUsed: true }).where(eq(otpCodes.id, otp.id));
     return { ok: false, error: 'تعداد تلاش بیش از حد مجاز. کد جدید بگیرید' };
   }
 
   if (otp.code !== String(code).trim()) {
-    await db
-      .update(otpCodes)
-      .set({ attempts: String(attempts + 1) })
-      .where(eq(otpCodes.id, otp.id));
+    await db.update(otpCodes).set({ attempts: String(attempts + 1) }).where(eq(otpCodes.id, otp.id));
     return { ok: false, error: 'کد تأیید اشتباه است' };
   }
 
-  // مصرف OTP
-  await db
-    .update(otpCodes)
-    .set({ isUsed: true })
-    .where(eq(otpCodes.id, otp.id));
+  await db.update(otpCodes).set({ isUsed: true }).where(eq(otpCodes.id, otp.id));
 
-  const existing = await db
-    .select()
-    .from(users)
-    .where(eq(users.phone, phone))
-    .limit(1);
-
+  const existing = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
   const user = existing[0];
 
   if (!user) {
-    // کاربر جدید — نیاز به تکمیل پروفایل
-    // یک OTP مصرف‌شده با purpose خاص برای complete-profile نگه می‌داریم؟ 
-    // به‌جای آن یک فلگ موقت در کوکی/session کوتاه‌عمر — ساده: token موقت verify
-    return {
-      ok: true,
-      needsProfile: true,
-      phone,
-      verificationToken: await createVerificationToken(phone),
-    };
+    return { ok: true, needsProfile: true, phone, verificationToken: await createVerificationToken(phone) };
   }
 
-  if (!user.isActive) {
-    return { ok: false, error: 'حساب کاربری غیرفعال است' };
-  }
+  if (!user.isActive) return { ok: false, error: 'حساب کاربری غیرفعال است' };
 
-  // علامت verified
   if (!user.isPhoneVerified) {
-    await db
-      .update(users)
-      .set({ isPhoneVerified: true, updatedAt: new Date() })
-      .where(eq(users.id, user.id));
+    await db.update(users).set({ isPhoneVerified: true, updatedAt: new Date() }).where(eq(users.id, user.id));
   }
 
   if (purpose === 'reset_password') {
-    return {
-      ok: true,
-      needsPasswordReset: true,
-      phone,
-      verificationToken: await createVerificationToken(phone),
-    };
+    return { ok: true, needsPasswordReset: true, phone, verificationToken: await createVerificationToken(phone) };
   }
 
-  await createSession({
-    sub: user.id,
-    phone: user.phone,
-    role: user.role,
-    firstName: user.firstName ?? undefined,
-    lastName: user.lastName ?? undefined,
-  });
+  await createSession(user.id);
+  const payload = await buildSessionPayload(user.id);
+  const redirectTo = dashboardPathForSession(payload);
 
-  return {
-    ok: true,
-    needsProfile: false,
-    user: publicUser(user),
-    redirectTo: dashboardPathForRole(user.role),
-  };
+  return { ok: true, needsProfile: false, user: publicUser(user), redirectTo, session: payload };
 }
 
-/**
- * تکمیل پروفایل کاربر جدید بعد از OTP
- * @param {{ phone: string, firstName: string, lastName: string, password: string, role?: string, verificationToken: string }} data
- */
 export async function completeRegistration(data) {
   const phone = normalizeIranPhone(data.phone);
   if (!phone) return { ok: false, error: 'شماره موبایل معتبر نیست' };
 
   const valid = await verifyVerificationToken(data.verificationToken, phone);
-  if (!valid) {
-    return { ok: false, error: 'نشست تأیید منقضی شده. دوباره وارد شوید' };
-  }
+  if (!valid) return { ok: false, error: 'نشست تأیید منقضی شده. دوباره وارد شوید' };
 
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.phone, phone))
-    .limit(1);
+  const existing = await db.select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1);
+  if (existing[0]) return { ok: false, error: 'این شماره قبلاً ثبت شده است' };
 
-  if (existing[0]) {
-    return { ok: false, error: 'این شماره قبلاً ثبت شده است' };
-  }
-
-  const role = ['customer', 'business_owner', 'visitor'].includes(data.role)
-    ? data.role
-    : 'customer';
-
+  const role = ['customer', 'business_owner', 'visitor'].includes(data.role) ? data.role : 'customer';
   const passwordHash = await hashPassword(data.password);
 
   const inserted = await db
@@ -237,105 +131,66 @@ export async function completeRegistration(data) {
     .returning();
 
   const user = inserted[0];
-  await createSession({
-    sub: user.id,
-    phone: user.phone,
-    role: user.role,
-    firstName: user.firstName ?? undefined,
-    lastName: user.lastName ?? undefined,
-  });
 
-  return {
-    ok: true,
-    user: publicUser(user),
-    redirectTo: dashboardPathForRole(user.role),
-  };
+  // اگر نقش visitor یا super_admin بود، در user_roles هم ثبت کن
+  if (role === 'visitor' || role === 'super_admin') {
+    try {
+      const { userRoles } = await import('@/db/schema/user-roles.js');
+      await db.insert(userRoles).values({ userId: user.id, role }).onConflictDoNothing();
+    } catch {}
+  }
+
+  // اگر referralCode داشت، visitor را لینک کن (provision در business-service انجام می‌شود اگر بیزنس بسازد)
+  if (data.referralCode) {
+    // ذخیره موقت؟ در حال حاضر فقط برای بیزنس استفاده می‌شود
+  }
+
+  await createSession(user.id);
+  const payload = await buildSessionPayload(user.id);
+  const redirectTo = dashboardPathForSession(payload);
+
+  return { ok: true, user: publicUser(user), redirectTo, session: payload };
 }
 
-/**
- * ورود با رمز عبور
- * @param {string} phoneRaw
- * @param {string} password
- */
 export async function loginWithPassword(phoneRaw, password) {
   const phone = normalizeIranPhone(phoneRaw);
   if (!phone) return { ok: false, error: 'شماره موبایل معتبر نیست' };
 
-  const rows = await db
-    .select()
-    .from(users)
-    .where(eq(users.phone, phone))
-    .limit(1);
-
+  const rows = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
   const user = rows[0];
-  if (!user || !user.passwordHash) {
-    return { ok: false, error: 'شماره یا رمز عبور اشتباه است' };
-  }
-
-  if (!user.isActive) {
-    return { ok: false, error: 'حساب کاربری غیرفعال است' };
-  }
+  if (!user || !user.passwordHash) return { ok: false, error: 'شماره یا رمز عبور اشتباه است' };
+  if (!user.isActive) return { ok: false, error: 'حساب کاربری غیرفعال است' };
 
   const match = await comparePassword(password, user.passwordHash);
-  if (!match) {
-    return { ok: false, error: 'شماره یا رمز عبور اشتباه است' };
-  }
+  if (!match) return { ok: false, error: 'شماره یا رمز عبور اشتباه است' };
 
-  await createSession({
-    sub: user.id,
-    phone: user.phone,
-    role: user.role,
-    firstName: user.firstName ?? undefined,
-    lastName: user.lastName ?? undefined,
-  });
+  await createSession(user.id);
+  const payload = await buildSessionPayload(user.id);
+  const redirectTo = dashboardPathForSession(payload);
 
-  return {
-    ok: true,
-    user: publicUser(user),
-    redirectTo: dashboardPathForRole(user.role),
-  };
+  return { ok: true, user: publicUser(user), redirectTo, session: payload };
 }
 
-/**
- * تنظیم رمز عبور جدید بعد از OTP فراموشی
- */
 export async function resetPassword({ phone: phoneRaw, password, verificationToken }) {
   const phone = normalizeIranPhone(phoneRaw);
   if (!phone) return { ok: false, error: 'شماره موبایل معتبر نیست' };
 
   const valid = await verifyVerificationToken(verificationToken, phone);
-  if (!valid) {
-    return { ok: false, error: 'نشست تأیید منقضی شده. دوباره تلاش کنید' };
-  }
+  if (!valid) return { ok: false, error: 'نشست تأیید منقضی شده. دوباره تلاش کنید' };
 
-  const rows = await db
-    .select()
-    .from(users)
-    .where(eq(users.phone, phone))
-    .limit(1);
-
+  const rows = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
   const user = rows[0];
   if (!user) return { ok: false, error: 'کاربر یافت نشد' };
 
   const passwordHash = await hashPassword(password);
-  await db
-    .update(users)
-    .set({ passwordHash, updatedAt: new Date() })
-    .where(eq(users.id, user.id));
+  await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, user.id));
+  await incrementTokenVersion(user.id);
 
-  await createSession({
-    sub: user.id,
-    phone: user.phone,
-    role: user.role,
-    firstName: user.firstName ?? undefined,
-    lastName: user.lastName ?? undefined,
-  });
+  await createSession(user.id);
+  const payload = await buildSessionPayload(user.id);
+  const redirectTo = dashboardPathForSession(payload);
 
-  return {
-    ok: true,
-    user: publicUser(user),
-    redirectTo: dashboardPathForRole(user.role),
-  };
+  return { ok: true, user: publicUser(user), redirectTo, session: payload };
 }
 
 export async function logout() {
@@ -346,13 +201,7 @@ export async function logout() {
 export async function getCurrentUser() {
   const session = await getSession();
   if (!session) return null;
-
-  const rows = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, session.sub))
-    .limit(1);
-
+  const rows = await db.select().from(users).where(eq(users.id, session.sub)).limit(1);
   const user = rows[0];
   if (!user || !user.isActive) return null;
   return publicUser(user);
@@ -366,20 +215,16 @@ function publicUser(user) {
     lastName: user.lastName,
     role: user.role,
     isPhoneVerified: user.isPhoneVerified,
+    tokenVersion: user.tokenVersion ?? 0,
   };
 }
-
-// ─── verification token کوتاه‌عمر (JWT جدا) برای complete-profile ───
 
 function secret() {
   return new TextEncoder().encode(process.env.JWT_SECRET || 'dev');
 }
 
 async function createVerificationToken(phone) {
-  return new SignJWT({ phone, typ: 'phone_verified' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('15m')
-    .sign(secret());
+  return new SignJWT({ phone, typ: 'phone_verified' }).setProtectedHeader({ alg: 'HS256' }).setExpirationTime('15m').sign(secret());
 }
 
 async function verifyVerificationToken(token, phone) {

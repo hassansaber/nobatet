@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { getSession, dashboardPathForRole } from '@/lib/auth';
+import { getSession, dashboardPathForSession } from '@/lib/auth';
 import { SiteHeaderClient } from '@/components/layout/SiteHeaderClient';
 
 export async function SiteHeader() {
@@ -9,7 +9,7 @@ export async function SiteHeader() {
   return (
     <SiteHeaderClient
       isLoggedIn={Boolean(session)}
-      dashboardHref={session ? dashboardPathForRole(session.role) : '/login'}
+      dashboardHref={session ? dashboardPathForSession(session) : '/login'}
       userLabel={
         session
           ? [session.firstName, session.lastName].filter(Boolean).join(' ') ||

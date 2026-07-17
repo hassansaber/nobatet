@@ -14,6 +14,7 @@ import { businesses, visitors, businessMembers } from '@/db/schema/businesses';
 import { users } from '@/db/schema/users';
 import { bookings } from '@/db/schema/bookings';
 import { slugify } from '@/lib/utils';
+import { incrementTokenVersion } from '@/lib/auth';
 
 // ─── Plans ──────────────────────────────────────────────
 
@@ -51,42 +52,28 @@ export async function upsertPlan(data) {
       .update(plans)
       .set({
         ...(data.name != null ? { name: data.name } : {}),
-        ...(data.description !== undefined
-          ? { description: data.description }
-          : {}),
-        ...(data.priceMonthly != null
-          ? { priceMonthly: Number(data.priceMonthly) }
-          : {}),
-        ...(data.priceYearly !== undefined
-          ? { priceYearly: data.priceYearly != null ? Number(data.priceYearly) : null }
-          : {}),
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.longDescription !== undefined ? { longDescription: data.longDescription } : {}),
+        ...(data.priceMonthly != null ? { priceMonthly: Number(data.priceMonthly) } : {}),
+        ...(data.price3Months !== undefined ? { price3Months: data.price3Months != null ? Number(data.price3Months) : null } : {}),
+        ...(data.priceYearly !== undefined ? { priceYearly: data.priceYearly != null ? Number(data.priceYearly) : null } : {}),
         ...(data.maxStaff != null ? { maxStaff: Number(data.maxStaff) } : {}),
-        ...(data.maxServices != null
-          ? { maxServices: Number(data.maxServices) }
-          : {}),
-        ...(data.maxBookingsPerMonth !== undefined
-          ? {
-              maxBookingsPerMonth:
-                data.maxBookingsPerMonth != null
-                  ? Number(data.maxBookingsPerMonth)
-                  : null,
-            }
-          : {}),
+        ...(data.maxServices != null ? { maxServices: Number(data.maxServices) } : {}),
+        ...(data.maxBookingsPerMonth !== undefined ? { maxBookingsPerMonth: data.maxBookingsPerMonth != null ? Number(data.maxBookingsPerMonth) : null } : {}),
+        ...(data.maxSmsPerMonth !== undefined ? { maxSmsPerMonth: data.maxSmsPerMonth != null ? Number(data.maxSmsPerMonth) : null } : {}),
         ...(data.features ? { features: data.features } : {}),
         ...(data.trialDays != null ? { trialDays: Number(data.trialDays) } : {}),
         ...(data.sortOrder != null ? { sortOrder: Number(data.sortOrder) } : {}),
         ...(data.isActive != null ? { isActive: Boolean(data.isActive) } : {}),
         ...(data.isPublic != null ? { isPublic: Boolean(data.isPublic) } : {}),
+        ...(data.tier ? { tier: data.tier } : {}),
       })
       .where(eq(plans.id, data.id))
       .returning();
     return { ok: true, plan: row };
   }
 
-  const code =
-    data.code ||
-    slugify(data.name || 'plan') ||
-    `plan-${Date.now().toString(36)}`;
+  const code = data.code || slugify(data.name || 'plan') || `plan-${Date.now().toString(36)}`;
 
   const [row] = await db
     .insert(plans)
@@ -94,20 +81,20 @@ export async function upsertPlan(data) {
       code,
       name: data.name,
       description: data.description || null,
+      longDescription: data.longDescription || null,
       priceMonthly: Number(data.priceMonthly || 0),
-      priceYearly:
-        data.priceYearly != null ? Number(data.priceYearly) : null,
+      price3Months: data.price3Months != null ? Number(data.price3Months) : null,
+      priceYearly: data.priceYearly != null ? Number(data.priceYearly) : null,
       maxStaff: Number(data.maxStaff ?? 1),
       maxServices: Number(data.maxServices ?? 10),
-      maxBookingsPerMonth:
-        data.maxBookingsPerMonth != null
-          ? Number(data.maxBookingsPerMonth)
-          : null,
+      maxBookingsPerMonth: data.maxBookingsPerMonth != null ? Number(data.maxBookingsPerMonth) : null,
+      maxSmsPerMonth: data.maxSmsPerMonth != null ? Number(data.maxSmsPerMonth) : null,
       features: data.features || {},
       trialDays: Number(data.trialDays ?? 14),
       sortOrder: Number(data.sortOrder ?? 0),
       isActive: data.isActive !== false,
       isPublic: data.isPublic !== false,
+      tier: data.tier || 'base',
     })
     .returning();
   return { ok: true, plan: row };
@@ -364,13 +351,17 @@ export async function ensureVisitorProfile(userId, data = {}) {
     })
     .returning();
 
-  // ensure role
+  // ensure global role visitor in user_roles + legacy role
+  try {
+    const { userRoles } = await import('@/db/schema/user-roles.js');
+    await db.insert(userRoles).values({ userId, role: 'visitor' }).onConflictDoNothing();
+  } catch {}
+
   if (user.role !== 'visitor' && user.role !== 'super_admin') {
-    await db
-      .update(users)
-      .set({ role: 'visitor', updatedAt: new Date() })
-      .where(eq(users.id, userId));
+    await db.update(users).set({ role: 'visitor', updatedAt: new Date() }).where(eq(users.id, userId));
   }
+
+  await incrementTokenVersion(userId);
 
   return { ok: true, visitor: row };
 }
@@ -494,29 +485,20 @@ async function createVisitorCommission({
 // ─── Super Admin ────────────────────────────────────────
 
 export async function getPlatformOverview() {
-  const [bizCount] = await db
-    .select({ c: sql`count(*)::int` })
-    .from(businesses);
+  const [bizCount] = await db.select({ c: sql`count(*)::int` }).from(businesses);
   const [userCount] = await db.select({ c: sql`count(*)::int` }).from(users);
-  const [visitorCount] = await db
-    .select({ c: sql`count(*)::int` })
-    .from(visitors);
-  const [bookingCount] = await db
-    .select({ c: sql`count(*)::int` })
-    .from(bookings);
-  const [activeSubs] = await db
-    .select({ c: sql`count(*)::int` })
-    .from(subscriptions)
-    .where(
-      sql`${subscriptions.status} in ('trial','active')`,
-    );
+  const [visitorCount] = await db.select({ c: sql`count(*)::int` }).from(visitors);
+  const [bookingCount] = await db.select({ c: sql`count(*)::int` }).from(bookings);
+  const [activeSubs] = await db.select({ c: sql`count(*)::int` }).from(subscriptions).where(sql`${subscriptions.status} in ('trial','active')`);
+  const [rev] = await db.select({ total: sql`coalesce(sum(${subscriptionInvoices.amount}),0)::int` }).from(subscriptionInvoices).where(eq(subscriptionInvoices.status, 'paid'));
 
-  const [rev] = await db
-    .select({
-      total: sql`coalesce(sum(${subscriptionInvoices.amount}),0)::int`,
-    })
-    .from(subscriptionInvoices)
-    .where(eq(subscriptionInvoices.status, 'paid'));
+  // SMS counts - new
+  let smsCount = 0;
+  try {
+    const { smsLogs } = await import('@/db/schema/saas');
+    const [sms] = await db.select({ c: sql`count(*)::int` }).from(smsLogs);
+    smsCount = sms?.c || 0;
+  } catch {}
 
   const recentBusinesses = await db
     .select({
@@ -534,16 +516,23 @@ export async function getPlatformOverview() {
     .orderBy(desc(businesses.createdAt))
     .limit(10);
 
+  // enrich with sms per business
+  let enriched = recentBusinesses;
+  try {
+    const { smsLogs } = await import('@/db/schema/saas');
+    enriched = await Promise.all(recentBusinesses.map(async (b) => {
+      try {
+        const [s] = await db.select({ c: sql`count(*)::int` }).from(smsLogs).where(eq(smsLogs.businessId, b.id));
+        return { ...b, smsCount: s?.c || 0 };
+      } catch { return b; }
+    }));
+  } catch {}
+
   return {
-    counts: {
-      businesses: bizCount?.c || 0,
-      users: userCount?.c || 0,
-      visitors: visitorCount?.c || 0,
-      bookings: bookingCount?.c || 0,
-      activeSubscriptions: activeSubs?.c || 0,
-    },
+    counts: { businesses: bizCount?.c || 0, users: userCount?.c || 0, visitors: visitorCount?.c || 0, bookings: bookingCount?.c || 0, activeSubscriptions: activeSubs?.c || 0, smsLogs: smsCount },
     subscriptionRevenue: rev?.total || 0,
-    recentBusinesses,
+    smsCount,
+    recentBusinesses: enriched,
   };
 }
 
@@ -607,16 +596,35 @@ export async function adminUpdateUser(userId, data) {
   const [row] = await db
     .update(users)
     .set({
-      ...(data.role
-        ? {
-            role: data.role,
-          }
-        : {}),
+      ...(data.role ? { role: data.role } : {}),
       ...(data.isActive != null ? { isActive: Boolean(data.isActive) } : {}),
       updatedAt: new Date(),
     })
     .where(eq(users.id, userId))
     .returning();
+
+  if (row) {
+    // اگر نقش سراسری تغییر کرد
+    if (data.role === 'super_admin' || data.role === 'visitor') {
+      try {
+        const { userRoles } = await import('@/db/schema/user-roles.js');
+        if (data.role === 'super_admin' || data.role === 'visitor') {
+          await db.insert(userRoles).values({ userId, role: data.role }).onConflictDoNothing();
+        }
+      } catch {}
+    }
+    if (data.role === 'customer' || data.role === 'business_owner' || data.role === 'staff') {
+      // حذف نقش‌های سراسری قدیمی اگر به نقش معمولی تغییر کرد و super_admin نبود
+      try {
+        if (data.role !== 'super_admin' && data.role !== 'visitor') {
+          const { userRoles } = await import('@/db/schema/user-roles.js');
+          await db.delete(userRoles).where(eq(userRoles.userId, userId));
+        }
+      } catch {}
+    }
+    await incrementTokenVersion(userId);
+  }
+
   return row || null;
 }
 
@@ -674,36 +682,49 @@ export async function seedDefaultPlans() {
   const existing = await listAllPlans();
   if (existing.length > 0) return existing;
 
+  // Task 8: base, pro, enterprise - 1m, 3m, 12m
   const defaults = [
     {
-      code: 'starter',
-      name: 'شروع',
-      description: '۱۴ روز آزمایشی + امکانات پایه',
-      priceMonthly: 0,
-      maxStaff: 1,
-      maxServices: 5,
-      maxBookingsPerMonth: 50,
+      code: 'base',
+      name: 'پلن پایه',
+      tier: 'base',
+      description: 'شروع هوشمند برای کسب‌وکارهای کوچک',
+      longDescription: 'شامل ۲ کارمند، ۲۰۰ پیامک در ماه، رزرو نامحدود، و گزارش پایه. مناسب سالن‌های تازه‌تاسیس.',
+      priceMonthly: 290000,
+      price3Months: 790000,
+      priceYearly: 2900000,
+      maxStaff: 2,
+      maxServices: 10,
+      maxBookingsPerMonth: null,
+      maxSmsPerMonth: 200,
       trialDays: 14,
       sortOrder: 1,
       features: {
-        crm: false,
+        crm: true,
         loyalty: false,
-        reports: false,
+        reports: true,
         customTheme: false,
         cardToCard: true,
         gateway: true,
-        smsReminders: false,
+        smsReminders: true,
+        expenses: false,
+        qrCode: true,
+        advancedCharts: false,
       },
     },
     {
       code: 'pro',
-      name: 'حرفه‌ای',
-      description: 'مناسب سالن و کلینیک در حال رشد',
-      priceMonthly: 490000,
-      priceYearly: 4900000,
+      name: 'پلن حرفه‌ای',
+      tier: 'pro',
+      description: 'محبوب‌ترین — CRM، باشگاه، گزارش پیشرفته',
+      longDescription: '۵ کارمند، ۱۰۰۰ پیامک، باشگاه مشتریان، CRM کامل، حسابداری کوچک و نمودارهای حرفه‌ای. مناسب کلینیک و سالن‌های فعال.',
+      priceMonthly: 590000,
+      price3Months: 1590000,
+      priceYearly: 5900000,
       maxStaff: 5,
       maxServices: 50,
       maxBookingsPerMonth: null,
+      maxSmsPerMonth: 1000,
       trialDays: 14,
       sortOrder: 2,
       features: {
@@ -714,17 +735,24 @@ export async function seedDefaultPlans() {
         cardToCard: true,
         gateway: true,
         smsReminders: true,
+        expenses: true,
+        qrCode: true,
+        advancedCharts: true,
       },
     },
     {
-      code: 'business',
-      name: 'سازمانی',
-      description: 'نامحدود + اولویت پشتیبانی',
-      priceMonthly: 990000,
-      priceYearly: 9900000,
-      maxStaff: 100,
+      code: 'enterprise',
+      name: 'پلن سازمانی',
+      tier: 'enterprise',
+      description: 'نامحدود + پشتیبانی اختصاصی + دامنه اختصاصی',
+      longDescription: '۲۰ کارمند، ۵۰۰۰ پیامک، دامنه اختصاصی، API دسترسی، گزارشات پیشرفته و اولویت پشتیبانی. برای مجموعه‌های بزرگ.',
+      priceMonthly: 1290000,
+      price3Months: 3490000,
+      priceYearly: 12900000,
+      maxStaff: 20,
       maxServices: 500,
       maxBookingsPerMonth: null,
+      maxSmsPerMonth: 5000,
       trialDays: 14,
       sortOrder: 3,
       features: {
@@ -736,6 +764,9 @@ export async function seedDefaultPlans() {
         gateway: true,
         smsReminders: true,
         customDomain: true,
+        expenses: true,
+        qrCode: true,
+        advancedCharts: true,
       },
     },
   ];
@@ -749,21 +780,22 @@ export async function seedDefaultPlans() {
 }
 
 /**
- * بعد از ساخت بیزنس — trial روی پلن starter + لینک ویزیتور
+ * بعد از ساخت بیزنس — trial روی پلن base + لینک ویزیتور
  */
-export async function provisionBusinessSubscription(
-  businessId,
-  referralCode = null,
-) {
+export async function provisionBusinessSubscription(businessId, referralCode = null) {
   await seedDefaultPlans();
-  const starter = await getPlanByCode('starter');
-  if (!starter) return { ok: false, error: 'پلن starter یافت نشد' };
+  let plan = await getPlanByCode('base');
+  if (!plan) plan = await getPlanByCode('starter'); // backward compat
+  if (!plan) {
+    const all = await listAllPlans();
+    plan = all[0];
+  }
+  if (!plan) return { ok: false, error: 'پلن یافت نشد' };
 
   let visitorId = null;
   if (referralCode) {
     const v = await getVisitorByReferralCode(referralCode);
     if (v) visitorId = v.id;
   }
-
-  return startTrial(businessId, starter.id, visitorId);
+  return startTrial(businessId, plan.id, visitorId);
 }

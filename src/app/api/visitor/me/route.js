@@ -12,7 +12,9 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.role !== 'visitor' && session.role !== 'super_admin') {
+    const isVisitor = session.globalRoles?.includes('visitor') || session.role === 'visitor';
+    const isSuper = session.globalRoles?.includes('super_admin') || session.role === 'super_admin';
+    if (!isVisitor && !isSuper) {
       return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
     }
 

@@ -41,9 +41,12 @@ export const businesses = pgTable(
     description: text('description'),
     logoUrl: text('logo_url'),
     bannerUrl: text('banner_url'),
+    galleryUrls: jsonb('gallery_urls').$type().default([]),
     phone: varchar('phone', { length: 15 }),
     address: text('address'),
     city: varchar('city', { length: 80 }),
+    latitude: varchar('latitude', { length: 32 }),
+    longitude: varchar('longitude', { length: 32 }),
     /** پالت رنگ و تنظیمات ظاهری لندینگ */
     theme: jsonb('theme').$type().default({
       primary: '#0d9488',
@@ -90,6 +93,7 @@ export const businessMembers = pgTable(
     role: membershipRoleEnum('role').notNull().default('staff'),
     /** عنوان شغلی نمایشی */
     jobTitle: varchar('job_title', { length: 100 }),
+    avatarUrl: text('avatar_url'),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },

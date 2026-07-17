@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { bookings } from '@/db/schema/bookings';
 import { formatRial } from '@/lib/utils';
 import { businessUrl, tenantHost } from '@/lib/tenant-url';
+import { BusinessDashboardCharts } from '@/components/business/BusinessDashboardCharts';
 
 export const metadata = { title: 'پنل کسب‌وکار' };
 
@@ -109,6 +110,8 @@ export default async function BusinessDashboardPage() {
           ))}
         </div>
 
+        {biz && <BusinessDashboardCharts businessId={biz.id} />}
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { href: '/business/bookings', t: 'رزروها', d: 'تأیید، لغو، انجام‌شد' },
@@ -118,8 +121,10 @@ export default async function BusinessDashboardPage() {
             { href: '/business/schedule', t: 'زمان‌بندی', d: 'ساعات کاری و مرخصی' },
             { href: '/business/customers', t: 'CRM', d: 'تگ، VIP، یادداشت' },
             { href: '/business/loyalty', t: 'باشگاه', d: 'امتیاز و کد تخفیف' },
-            { href: '/business/reports', t: 'گزارش‌ها', d: 'درآمد و آمار' },
-            { href: '/business/settings', t: 'تنظیمات', d: 'تم، کارت، قوانین' },
+            { href: '/business/expenses', t: '💰 حسابداری', d: 'هزینه‌ها و سود' },
+            { href: '/business/qr', t: '📱 QR کد', d: 'چاپ QR لندینگ' },
+            { href: '/business/reports', t: 'گزارش‌ها', d: 'درآمد و آمار نموداری' },
+            { href: '/business/settings', t: 'تنظیمات', d: 'لوگو، بنر، گالری، نقشه + QR' },
             ...(biz
               ? [
                   {

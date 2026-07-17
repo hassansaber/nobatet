@@ -30,7 +30,8 @@ export const invoiceStatusEnum = pgEnum('saas_invoice_status', [
 ]);
 
 /**
- * پلن‌های اشتراک SaaS پلتفرم
+ * پلن‌های اشتراک SaaS پلتفرم - upgraded for task 7,8
+ * 3 tiers: base, pro, enterprise - each with 1m, 3m, 12m pricing
  */
 export const plans = pgTable(
   'plans',
@@ -39,13 +40,16 @@ export const plans = pgTable(
     code: varchar('code', { length: 40 }).notNull(),
     name: varchar('name', { length: 80 }).notNull(),
     description: text('description'),
+    longDescription: text('long_description'),
     /** قیمت ماهانه تومان */
     priceMonthly: integer('price_monthly').notNull().default(0),
-    /** قیمت سالانه تومان (اختیاری) */
+    price3Months: integer('price_3months'),
+    /** قیمت سالانه تومان */
     priceYearly: integer('price_yearly'),
     maxStaff: integer('max_staff').notNull().default(1),
     maxServices: integer('max_services').notNull().default(10),
     maxBookingsPerMonth: integer('max_bookings_per_month'), // null = unlimited
+    maxSmsPerMonth: integer('max_sms_per_month'), // task 7: limit by sms count
     features: jsonb('features').$type().default({
       crm: false,
       loyalty: false,
@@ -55,11 +59,15 @@ export const plans = pgTable(
       gateway: true,
       smsReminders: false,
       customDomain: false,
+      expenses: false,
+      qrCode: true,
+      advancedCharts: false,
     }),
     trialDays: integer('trial_days').notNull().default(14),
     sortOrder: integer('sort_order').notNull().default(0),
     isActive: boolean('is_active').notNull().default(true),
     isPublic: boolean('is_public').notNull().default(true),
+    tier: varchar('tier', { length: 20 }).notNull().default('base'), // base | pro | enterprise
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -176,3 +184,48 @@ export const platformSettings = pgTable('platform_settings', {
     .notNull(),
   updatedBy: uuid('updated_by').references(() => users.id),
 });
+
+/**
+ * لاگ پیامک‌ها برای محاسبه مصرف (Task 7)
+ */
+export const smsLogs = pgTable(
+  'sms_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    businessId: uuid('business_id').references(() => businesses.id, {
+      onDelete: 'cascade',
+    }),
+    phone: varchar('phone', { length: 11 }).notNull(),
+    pattern: varchar('pattern', { length: 40 }).notNull(),
+    bodyId: varchar('body_id', { length: 40 }),
+    status: varchar('status', { length: 20 }).notNull().default('pending'), // sent | failed | pending
+    providerRef: varchar('provider_ref', { length: 120 }),
+    cost: integer('cost').default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('sms_logs_business_idx').on(table.businessId),
+    index('sms_logs_created_idx').on(table.createdAt),
+  ],
+);
+
+/**
+ * هزینه کرد / حسابداری کوچک کسب‌وکار (Task 13)
+ */
+export const expenses = pgTable(
+  'expenses',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    businessId: uuid('business_id')
+      .notNull()
+      .references(() => businesses.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 160 }).notNull(),
+    amount: integer('amount').notNull(),
+    category: varchar('category', { length: 40 }).notNull().default('other'), // rent, salary, purchase, marketing, other
+    description: text('description'),
+    expenseDate: timestamp('expense_date', { withTimezone: true }).notNull().defaultNow(),
+    createdBy: uuid('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('expenses_business_idx').on(table.businessId)],
+);

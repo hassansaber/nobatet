@@ -9,7 +9,7 @@ import {
 } from '@/db/schema/services';
 import { users } from '@/db/schema/users';
 import { bookings } from '@/db/schema/bookings';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, incrementTokenVersion } from '@/lib/auth';
 import { normalizeIranPhone, slugify } from '@/lib/utils';
 
 export async function getBusinessBySlug(slug) {
@@ -54,8 +54,10 @@ export async function getPublicBusinessLanding(slug) {
       id: businessMembers.id,
       role: businessMembers.role,
       jobTitle: businessMembers.jobTitle,
+      avatarUrl: businessMembers.avatarUrl,
       firstName: users.firstName,
       lastName: users.lastName,
+      userAvatarUrl: users.avatarUrl,
     })
     .from(businessMembers)
     .innerJoin(users, eq(users.id, businessMembers.userId))
@@ -73,6 +75,9 @@ export async function getPublicBusinessLanding(slug) {
     description: biz.description,
     logoUrl: biz.logoUrl,
     bannerUrl: biz.bannerUrl,
+    galleryUrls: biz.galleryUrls || [],
+    latitude: biz.latitude || null,
+    longitude: biz.longitude || null,
     phone: biz.phone,
     address: biz.address,
     city: biz.city,
@@ -88,6 +93,7 @@ export async function getPublicBusinessLanding(slug) {
       name: [m.firstName, m.lastName].filter(Boolean).join(' ') || 'کارمند',
       jobTitle: m.jobTitle,
       role: m.role,
+      avatarUrl: m.avatarUrl || m.userAvatarUrl || null,
     })),
   };
 }
@@ -130,6 +136,7 @@ export async function createBusiness({
     role: 'owner',
     jobTitle: 'مدیر',
   });
+  await incrementTokenVersion(ownerId);
 
   const hours = [];
   for (let day = 0; day <= 5; day++) {
@@ -276,10 +283,12 @@ export async function listStaff(businessId) {
       userId: businessMembers.userId,
       role: businessMembers.role,
       jobTitle: businessMembers.jobTitle,
+      avatarUrl: businessMembers.avatarUrl,
       isActive: businessMembers.isActive,
       firstName: users.firstName,
       lastName: users.lastName,
       phone: users.phone,
+      userAvatarUrl: users.avatarUrl,
     })
     .from(businessMembers)
     .innerJoin(users, eq(users.id, businessMembers.userId))
@@ -359,6 +368,7 @@ export async function addStaffMember(businessId, data) {
         })
         .where(eq(businessMembers.id, existing[0].id))
         .returning();
+      await incrementTokenVersion(user.id);
       return { ok: true, member: reactivated, user };
     }
     return { ok: false, error: 'این شماره قبلاً در تیم است' };
@@ -386,6 +396,8 @@ export async function addStaffMember(businessId, data) {
     }
   }
 
+  await incrementTokenVersion(user.id);
+
   return { ok: true, member, user };
 }
 
@@ -394,6 +406,7 @@ export async function updateStaffMember(memberId, businessId, data) {
     .update(businessMembers)
     .set({
       ...(data.jobTitle !== undefined ? { jobTitle: data.jobTitle } : {}),
+      ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
       ...(data.role && ['staff', 'manager'].includes(data.role)
         ? { role: data.role }
         : {}),
@@ -410,14 +423,16 @@ export async function updateStaffMember(memberId, businessId, data) {
   if (!row) return null;
 
   if (Array.isArray(data.serviceIds)) {
-    // replace links
-    await db
-      .delete(staffServices)
-      .where(eq(staffServices.memberId, memberId));
+    await db.delete(staffServices).where(eq(staffServices.memberId, memberId));
     for (const sid of data.serviceIds) {
       await linkStaffService(memberId, sid);
     }
   }
+
+  // نقش یا وضعیت عوض شد → tokenVersion
+  try {
+    await incrementTokenVersion(row.userId);
+  } catch {}
 
   return row;
 }
@@ -549,9 +564,14 @@ export async function updateBusinessSettings(businessId, data) {
     'cancellationPolicy',
     'cardNumber',
     'cardHolderName',
+    'latitude',
+    'longitude',
   ];
   for (const k of scalar) {
     if (data[k] !== undefined) patch[k] = data[k];
+  }
+  if (data.galleryUrls !== undefined) {
+    patch.galleryUrls = Array.isArray(data.galleryUrls) ? data.galleryUrls : [];
   }
   if (data.depositPercent != null) {
     patch.depositPercent = Math.min(100, Math.max(0, Number(data.depositPercent)));

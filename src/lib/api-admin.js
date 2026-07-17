@@ -8,7 +8,8 @@ export async function requireSuperAdmin() {
       error: NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 }),
     };
   }
-  if (session.role !== 'super_admin') {
+  const isSuper = session.globalRoles?.includes('super_admin') || session.role === 'super_admin';
+  if (!isSuper) {
     return {
       error: NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 }),
     };
