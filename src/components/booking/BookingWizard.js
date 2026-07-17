@@ -214,8 +214,8 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
     const pending = b.status === 'pending_payment' || result.cardSubmitted;
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className={cn('rounded-[1.5rem] border p-8 text-center space-y-4 backdrop-blur-xl', pending ? 'border-amber-200 bg-amber-50/70' : 'border-teal-200 bg-teal-50/70 shadow-xl shadow-teal-900/10')}>
-        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2 }} className="text-5xl mx-auto size-16 rounded-full bg-white shadow-md flex items-center justify-center">
-          {pending ? '⏳' : '✅'}
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', delay: 0.2 }} className="size-16 rounded-full bg-white shadow-md flex items-center justify-center mx-auto">
+          {pending ? <Clock className="size-8 text-amber-600" /> : <UserCheck className="size-8 text-teal-600" />}
         </motion.div>
         <h3 className={cn('text-xl font-black', pending ? 'text-amber-900' : 'text-teal-900')}>{pending ? 'در انتظار تأیید پرداخت' : 'رزرو قطعی شد'}</h3>
         <p className={cn('text-base', pending ? 'text-amber-800' : 'text-teal-800')}>{service?.name} · {formatTehranDateTime(b.startsAt)}</p>
@@ -229,7 +229,7 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
   if (step === 8 && cardState) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-[1.5rem] border border-white/40 bg-white/70 backdrop-blur-xl p-5 sm:p-6 space-y-5 shadow-xl">
-        <h3 className="font-black text-lg flex items-center gap-2">💳 واریز کارت‌به‌کارت</h3>
+        <h3 className="font-black text-lg flex items-center gap-2"><CreditCard className="size-5" /> واریز کارت‌به‌کارت</h3>
         <div className="rounded-2xl bg-white/60 backdrop-blur border border-white/50 p-4 space-y-3 shadow-sm">
           <Row label="مبلغ" value={`${formatRial(cardState.amount)} تومان`} />
           <Row label="به نام" value={cardState.cardHolderName || '—'} />
@@ -256,7 +256,7 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
       {/* خلاصه پیشرونده - گلس مورفیسم */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-[1.2rem] bg-white/40 backdrop-blur-2xl border border-white/30 p-4 shadow-[0_8px_32px_rgba(0,0,0,0.08)]">
         <div className="flex items-center justify-between mb-3">
-          <h4 className="font-black text-sm flex items-center gap-2">📋 خلاصه رزرو شما</h4>
+          <h4 className="font-black text-sm flex items-center gap-2"><span className="size-6 rounded-lg bg-primary/10 flex items-center justify-center"><UserCheck className="size-4 text-primary" /></span> خلاصه رزرو شما</h4>
           <span className="text-[11px] bg-white/60 rounded-full px-2.5 py-1 border border-white/40">مرحله {Math.min(step, 6)} از ۶</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">

@@ -92,7 +92,7 @@ export function SettingsForm() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-black">تنظیمات کسب‌وکار • آپلود مستقیم</h1>
         <div className="flex gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={() => setQrOpen(!qrOpen)}>📱 QR</Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => setQrOpen(!qrOpen)}>QR کد</Button>
           <Button type="submit" loading={saving} size="sm">ذخیره همه</Button>
         </div>
       </div>

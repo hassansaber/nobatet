@@ -169,16 +169,16 @@ export function DashboardShell({ children, title, role: roleProp }) {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <Link href="/" className="hidden sm:inline-flex h-8 items-center rounded-xl border border-border bg-white px-2.5 text-[11px] font-bold hover:bg-slate-50">
-              🏠 خانه
+            <Link href="/" className="hidden sm:inline-flex h-8 items-center rounded-xl border border-border bg-white px-2.5 text-[11px] font-bold hover:bg-slate-50 cursor-pointer">
+              خانه
             </Link>
             {businessLandingUrl && (
-              <a href={businessLandingUrl} target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex h-8 items-center rounded-xl border border-teal-200 bg-teal-50 px-2.5 text-[11px] font-bold text-teal-800 hover:bg-teal-100">
-                🌐 لندینگ
+              <a href={businessLandingUrl} target="_blank" rel="noopener noreferrer" className="hidden sm:inline-flex h-8 items-center rounded-xl border border-blue-200 bg-blue-50 px-2.5 text-[11px] font-bold text-blue-800 hover:bg-blue-100 cursor-pointer">
+                لندینگ
               </a>
             )}
-            <Link href={home} className="hidden sm:inline-flex h-8 items-center rounded-xl border border-border bg-slate-900 text-white px-2.5 text-[11px] font-bold hover:bg-slate-800">
-              📊 داشبورد
+            <Link href={home} className="hidden sm:inline-flex h-8 items-center rounded-xl border border-border bg-slate-900 text-white px-2.5 text-[11px] font-bold hover:bg-slate-800 cursor-pointer">
+              داشبورد
             </Link>
             <WorkspaceSwitcher />
             <form action={logoutAction}>
@@ -191,8 +191,8 @@ export function DashboardShell({ children, title, role: roleProp }) {
         <nav className="mx-auto max-w-6xl px-2 overflow-x-auto">
           <ul className="flex gap-1.5 pb-2.5 min-w-max">
             <li>
-              <Link href="/" className="inline-flex h-9 items-center rounded-xl px-3 text-xs font-bold text-muted-foreground hover:bg-slate-100">
-                🏠 سایت
+              <Link href="/" className="inline-flex h-9 items-center rounded-xl px-3 text-xs font-bold text-muted-foreground hover:bg-slate-100 cursor-pointer">
+                سایت
               </Link>
             </li>
             {items.map((item) => {

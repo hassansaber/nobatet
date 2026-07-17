@@ -16,6 +16,42 @@ function getExpiresIn() {
   return process.env.JWT_EXPIRES_IN || '30d';
 }
 
+function getCookieDomain() {
+  try {
+    const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'localhost:3001';
+    const host = base.split(':')[0].toLowerCase(); // localhost or nobatet.com
+    if (!host || host === 'localhost' || host === '127.0.0.1') {
+      // برای localhost: مقدار localhost باعث می‌شود کوکی برای *.localhost هم فرستاده شود در کروم جدید
+      // برخی مرورگرها .localhost را نمی‌پذیرند، پس بدون نقطه
+      return 'localhost';
+    }
+    // برای پروداکشن: اگر دامنه خودش نقطه ندارد، نقطه اضافه کن تا ساب‌دامین‌ها را پوشش دهد
+    // مثال: nobatet.com → .nobatet.com
+    if (host.startsWith('.')) return host;
+    return `.${host}`;
+  } catch {
+    return undefined;
+  }
+}
+
+function getCookieOptions(maxAgeSeconds) {
+  const domain = getCookieDomain();
+  const isProd = process.env.NODE_ENV === 'production';
+  const opts = {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: maxAgeSeconds,
+  };
+  if (domain && domain !== 'localhost') {
+    opts.domain = domain;
+  } else if (domain === 'localhost' && isProd === false) {
+    opts.domain = domain;
+  }
+  return opts;
+}
+
 // Lazy db import to avoid circular
 async function getDb() {
   const { db } = await import('@/db/index.js');
@@ -121,13 +157,16 @@ export async function createSession(userIdOrPayload) {
     .sign(getJwtSecret());
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  });
+  const cookieOpts = getCookieOptions(60 * 60 * 24 * 30);
+  // تلاش برای ست با domain، اگر مرورگر قبول نکرد fallback بدون domain (برای localhost قدیمی)
+  try {
+    cookieStore.set(SESSION_COOKIE, token, cookieOpts);
+  } catch (e) {
+    // fallback بدون domain برای localhost
+    const fallbackOpts = { ...cookieOpts };
+    delete fallbackOpts.domain;
+    cookieStore.set(SESSION_COOKIE, token, fallbackOpts);
+  }
 
   return token;
 }
@@ -171,13 +210,14 @@ export async function getSession() {
           .setExpirationTime(getExpiresIn())
           .sign(getJwtSecret());
 
-        cookieStore.set(SESSION_COOKIE, newToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24 * 30,
-        });
+        const cookieOpts = getCookieOptions(60 * 60 * 24 * 30);
+        try {
+          cookieStore.set(SESSION_COOKIE, newToken, cookieOpts);
+        } catch {
+          const fallback = { ...cookieOpts };
+          delete fallback.domain;
+          cookieStore.set(SESSION_COOKIE, newToken, fallback);
+        }
 
         return {
           sub: freshPayload.sub,
@@ -236,23 +276,39 @@ export async function verifyToken(token) {
 
 export async function destroySession() {
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-  });
+  const baseOpts = getCookieOptions(0);
+  // برای حذف باید maxAge=0 و همان domain/path باشد
+  try {
+    cookieStore.set(SESSION_COOKIE, '', { ...baseOpts, maxAge: 0 });
+  } catch {
+    const fallback = { ...baseOpts, maxAge: 0 };
+    delete fallback.domain;
+    cookieStore.set(SESSION_COOKIE, '', fallback);
+  }
   // پاک کردن active workspace هم
   try {
-    cookieStore.set(ACTIVE_WORKSPACE_COOKIE, '', {
+    const activeOpts = {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 0,
-    });
-  } catch {}
+    };
+    const domain = getCookieDomain();
+    if (domain && domain !== 'localhost') activeOpts.domain = domain;
+    else if (domain === 'localhost') activeOpts.domain = domain;
+    cookieStore.set(ACTIVE_WORKSPACE_COOKIE, '', activeOpts);
+  } catch {
+    try {
+      cookieStore.set(ACTIVE_WORKSPACE_COOKIE, '', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+      });
+    } catch {}
+  }
 }
 
 export async function incrementTokenVersion(userId) {
