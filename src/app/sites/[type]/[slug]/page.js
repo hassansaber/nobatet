@@ -180,6 +180,7 @@ export default async function TenantLandingPage({ params }) {
 
   return (
     <div className="min-h-dvh bg-slate-50 pb-28">
+<<<<<<< HEAD
       {/* Cover - supports video banner */}
       <div className="relative h-[300px] sm:h-[420px] w-full overflow-hidden bg-slate-900">
         {isCoverVideo ? (
@@ -187,6 +188,18 @@ export default async function TenantLandingPage({ params }) {
         ) : (
           <Image src={cover} alt={biz.name} fill className="object-cover" priority sizes="100vw" />
         )}
+=======
+      {/* Cover */}
+      <div className="relative h-[300px] sm:h-[420px] w-full overflow-hidden">
+        <Image
+          src={cover}
+          alt={biz.name}
+          fill
+          className="object-cover"
+          priority
+          sizes="100vw"
+        />
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
         <div
           className="absolute inset-0"
           style={{
@@ -285,6 +298,7 @@ export default async function TenantLandingPage({ params }) {
         {/* Gallery - supports image & video from upload */}
         <section>
           <h2 className="font-black text-[15px] mb-3 flex items-center gap-2">
+<<<<<<< HEAD
             <span>🖼️</span> محیط کار {gallery.some((s)=>s.endsWith('.mp4')||s.endsWith('.webm')) ? '• ویدیو' : ''}
           </h2>
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -300,6 +314,25 @@ export default async function TenantLandingPage({ params }) {
                 </div>
               );
             })}
+=======
+            <span>🖼️</span> محیط کار
+          </h2>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            {gallery.map((src, i) => (
+              <div
+                key={src + i}
+                className={`relative overflow-hidden rounded-2xl border border-border ${i === 0 ? 'col-span-2 aspect-[21/9]' : 'aspect-[4/3]'}`}
+              >
+                <Image
+                  src={src}
+                  alt={`${biz.name} گالری`}
+                  fill
+                  className="object-cover hover:scale-105 transition-transform duration-700"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+            ))}
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
           </div>
         </section>
 

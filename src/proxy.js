@@ -65,7 +65,10 @@ export async function proxy(request) {
     pathname.startsWith('/staff') ||
     pathname.startsWith('/visitor') ||
     pathname.startsWith('/me') ||
+<<<<<<< HEAD
     pathname.startsWith('/choose-workspace') ||
+=======
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
     isStaticFile;
 
   if (!isInternal) {

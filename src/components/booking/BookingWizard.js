@@ -35,6 +35,27 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
   const service = useMemo(() => business.services.find((s) => s.id === serviceId), [business.services, serviceId]);
   const hasCard = Boolean(business.cardNumber);
 
+<<<<<<< HEAD
+=======
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !data.ok || !data.user) return;
+        const user = data.user;
+        setSessionUser(user);
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+        if (fullName) setCustomerName((prev) => prev || fullName);
+        if (user.phone) setCustomerPhone((prev) => prev || user.phone);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
   const dateOptions = useMemo(() => {
     const opts = [];
     const now = new Date();
@@ -147,11 +168,18 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
 
   function resetAll() {
     setResult(null); setCardState(null); setStep(1); setServiceId(''); setMemberId(''); setDate(''); setSlot(null); setPolicyAccepted(false); setPaymentMethod('sandbox'); setCardLast4(''); setCardTransferCode(''); setCardTransferNote('');
+<<<<<<< HEAD
     hasPrefilledRef.current = { name: false, phone: false };
     if (sessionUser) {
       const fullName = [sessionUser.firstName, sessionUser.lastName].filter(Boolean).join(' ').trim();
       if (fullName) { setCustomerName(fullName); hasPrefilledRef.current.name = true; }
       if (sessionUser.phone) { setCustomerPhone(sessionUser.phone); hasPrefilledRef.current.phone = true; }
+=======
+    if (sessionUser) {
+      const fullName = [sessionUser.firstName, sessionUser.lastName].filter(Boolean).join(' ').trim();
+      if (fullName) setCustomerName(fullName);
+      if (sessionUser.phone) setCustomerPhone(sessionUser.phone);
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
     }
   }
 
@@ -184,6 +212,7 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
             </button>
           </div>
         </div>
+<<<<<<< HEAD
         <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs leading-6 text-amber-800">💡 مبلغ را کارت‌به‌کارت کنید، سپس فرم زیر را کامل پر کنید.</div>
         <div className="grid sm:grid-cols-2 gap-3">
           <Input label="۴ رقم آخر کارت مبدأ *" dir="ltr" inputMode="numeric" maxLength={4} placeholder="مثلا 1234" value={cardLast4} onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} />
@@ -195,6 +224,27 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
         </div>
         {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         <Button className="w-full" style={{ backgroundColor: primaryColor }} loading={loading} disabled={cardLast4.length !== 4} onClick={submitCardProof}>ثبت اطلاعات واریز ✓</Button>
+=======
+
+        <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs leading-6 text-amber-800">
+          💡 لطفا مبلغ را کارت‌به‌کارت کنید، سپس فرم زیر را کامل پر کنید تا تأیید سریع شود. تا ۳ ساعت قفل تایم شما حفظ می‌شود.
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Input label="۴ رقم آخر کارت مبدأ *" dir="ltr" inputMode="numeric" maxLength={4} placeholder="مثلا 1234" value={cardLast4} onChange={(e) => setCardLast4(e.target.value.replace(/\D/g, '').slice(0, 4))} />
+          <Input label="شماره پیگیری / ارجاع" dir="ltr" placeholder="مثلا 123456789 یا کد ارجاع بانک" value={cardTransferCode} onChange={(e) => setCardTransferCode(e.target.value)} />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">توضیحات تراکنش *</label>
+          <textarea value={cardTransferNote} onChange={(e) => setCardTransferNote(e.target.value)} placeholder="مثلا: شماره تراکنش 458392 - تاریخ 1403/05/20 ساعت 14:30 - بانک ملت - واریز کننده علی رضایی - 250 هزار تومان" className="w-full rounded-xl border border-border p-3 text-sm min-h-[90px] placeholder:text-muted-foreground/60" />
+          <p className="text-[11px] text-muted-foreground">پیشنهاد: شماره تراکنش، تاریخ و زمان دقیق، نام بانک مبدأ، و نام واریز کننده را بنویسید</p>
+        </div>
+
+        {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        <Button className="w-full" style={{ backgroundColor: primaryColor }} loading={loading} disabled={cardLast4.length !== 4} onClick={submitCardProof}>ثبت اطلاعات واریز ✓</Button>
+        <p className="text-[11px] text-center text-muted-foreground">زمان قفل تا: {cardState.lockExpiresAt ? new Date(cardState.lockExpiresAt).toLocaleString('fa-IR') : '—'}</p>
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
       </div>
     );
   }
@@ -211,6 +261,7 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
         </div>
 
         {sessionUser && step === 5 && (
+<<<<<<< HEAD
           <div className="rounded-xl bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 px-3 py-2.5 flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <span className="size-6 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-black">✓</span>
@@ -238,6 +289,26 @@ export function BookingWizard({ business, primaryColor = '#0d9488' }) {
 
         {step === 6 && (<div className="space-y-4"><div className="rounded-xl bg-muted p-4 text-base space-y-2"><Row label="خدمت" value={service?.name} /><Row label="زمان" value={slot ? formatTehranDateTime(slot.startsAt) : '—'} /><Row label="نام" value={customerName} /><Row label="مبلغ" value={`${formatRial(service?.price || 0)} تومان`} /></div><div className="space-y-2"><p className="text-base font-bold">روش پرداخت</p><label className={cn('flex cursor-pointer items-start gap-3 rounded-xl border p-3.5', paymentMethod === 'sandbox' ? 'border-primary bg-teal-50' : 'border-border')}><input type="radio" name="pay" checked={paymentMethod === 'sandbox'} onChange={() => setPaymentMethod('sandbox')} className="mt-1 accent-teal-600" /><span><span className="block text-base font-bold">درگاه آنلاین</span><span className="block text-sm text-muted-foreground">پرداخت سریع</span></span></label>{hasCard && (<label className={cn('flex cursor-pointer items-start gap-3 rounded-xl border p-3.5', paymentMethod === 'card_to_card' ? 'border-primary bg-teal-50' : 'border-border')}><input type="radio" name="pay" checked={paymentMethod === 'card_to_card'} onChange={() => setPaymentMethod('card_to_card')} className="mt-1 accent-teal-600" /><span><span className="block text-base font-bold">کارت‌به‌کارت</span><span className="block text-sm text-muted-foreground">واریز + تأیید دستی</span></span></label>)}</div>{business.cancellationPolicy && (<div className="rounded-xl border border-border p-3 text-sm text-muted-foreground leading-7"><p className="font-bold text-foreground mb-1">قوانین لغو</p>{business.cancellationPolicy}</div>)}<label className="flex items-start gap-2 text-base cursor-pointer"><input type="checkbox" checked={policyAccepted} onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1 accent-teal-600" /><span>قوانین را می‌پذیرم</span></label><div className="flex gap-2"><Button variant="ghost" className="flex-1" onClick={() => setStep(5)}>بازگشت</Button><Button className="flex-1" style={{ backgroundColor: primaryColor }} loading={loading} disabled={!policyAccepted} onClick={submitBooking}>{paymentMethod === 'card_to_card' ? 'ادامه واریز' : 'پرداخت آنلاین'}</Button></div></div>)}
 
+=======
+          <div className="rounded-xl bg-gradient-to-r from-teal-50 to-cyan-50 border border-teal-200 px-3 py-2.5 flex items-center gap-2 text-sm">
+            <span className="size-6 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-black">✓</span>
+            <span className="text-teal-900 font-medium">👋 {sessionUser.firstName ? `${sessionUser.firstName} عزیز،` : ''} اطلاعات شما خودکار پر شد — قابل ویرایش است</span>
+          </div>
+        )}
+
+        {step === 1 && (<div className="space-y-2">{business.services.map((s) => (<button key={s.id} type="button" onClick={() => { setServiceId(s.id); setStep(2); }} className={cn('w-full text-right rounded-xl border p-4 transition-all', serviceId === s.id ? 'border-primary bg-teal-50 shadow-sm' : 'border-border hover:border-primary/40 hover:shadow-sm')}><div className="flex justify-between gap-3"><div><p className="font-bold text-base">{s.name}</p><p className="text-sm text-muted-foreground mt-0.5">{s.durationMinutes} دقیقه</p></div><p className="text-base font-black whitespace-nowrap text-primary">{formatRial(s.price)} <span className="text-sm font-semibold text-muted-foreground">ت</span></p></div></button>))}</div>)}
+
+        {step === 2 && (<div className="space-y-2"><button type="button" onClick={() => { setMemberId(''); setStep(3); }} className={cn('w-full text-right rounded-xl border p-4', !memberId ? 'border-primary bg-teal-50' : 'border-border hover:border-primary/40')}><p className="font-bold text-base">بدون ترجیح</p><p className="text-sm text-muted-foreground">اولین تایم آزاد</p></button>{business.staff.map((st) => (<button key={st.id} type="button" onClick={() => { setMemberId(st.id); setStep(3); }} className={cn('w-full text-right rounded-xl border p-4 hover:border-primary/40', memberId === st.id ? 'border-primary bg-teal-50' : 'border-border')}><p className="font-bold text-base">{st.name}</p>{st.jobTitle && <p className="text-sm text-muted-foreground">{st.jobTitle}</p>}</button>))}<Button variant="ghost" className="w-full" onClick={() => setStep(1)}>بازگشت</Button></div>)}
+
+        {step === 3 && (<div className="space-y-3"><div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{dateOptions.map((d) => (<button key={d.value} type="button" onClick={() => { setDate(d.value); setStep(4); }} className={cn('rounded-xl border p-3.5 text-sm font-bold', date === d.value ? 'border-primary bg-teal-50 text-teal-900' : 'border-border hover:border-primary/40')}>{d.label}</button>))}</div><Button variant="ghost" className="w-full" onClick={() => setStep(2)}>بازگشت</Button></div>)}
+
+        {step === 4 && (<div className="space-y-3">{slotsLoading && <p className="text-base text-muted-foreground text-center py-6">در حال محاسبه تایم‌های آزاد...</p>}{!slotsLoading && slots.length === 0 && <p className="text-base text-muted-foreground text-center py-6">در این روز تایم آزادی نیست.</p>}<div className="grid grid-cols-3 sm:grid-cols-4 gap-2">{slots.map((s) => (<button key={s.startsAt} type="button" onClick={() => { setSlot(s); setStep(5); }} className={cn('rounded-xl border py-3 text-base font-bold tabular-nums hover:border-primary/40 hover:bg-teal-50', slot?.startsAt === s.startsAt && 'border-primary bg-teal-50 text-teal-900')} dir="ltr">{s.start}</button>))}</div><Button variant="ghost" className="w-full" onClick={() => setStep(3)}>بازگشت</Button></div>)}
+
+        {step === 5 && (<div className="space-y-3"><Input label="نام و نام خانوادگی" value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={sessionUser ? `${sessionUser.firstName || ''} ${sessionUser.lastName || ''}`.trim() + ' (از حساب شما)' : 'مثلا علی رضایی'} required /><Input label="شماره موبایل" type="tel" inputMode="tel" dir="ltr" placeholder="09123456789" value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} required />{sessionUser && <p className="text-[11px] text-muted-foreground -mt-1">💡 شماره {sessionUser.phone} از حساب شما پر شد اما می‌توانید تغییر دهید</p>}<Input label="یادداشت (اختیاری)" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="توضیحات اضافه برای منشی..." /><div className="flex gap-2"><Button variant="ghost" className="flex-1" onClick={() => setStep(4)}>بازگشت</Button><Button className="flex-1" style={{ backgroundColor: primaryColor }} disabled={!customerName.trim() || !customerPhone.trim()} onClick={() => setStep(6)}>ادامه</Button></div></div>)}
+
+        {step === 6 && (<div className="space-y-4"><div className="rounded-xl bg-muted p-4 text-base space-y-2"><Row label="خدمت" value={service?.name} /><Row label="زمان" value={slot ? formatTehranDateTime(slot.startsAt) : '—'} /><Row label="نام" value={customerName} /><Row label="مبلغ" value={`${formatRial(service?.price || 0)} تومان`} /></div><div className="space-y-2"><p className="text-base font-bold">روش پرداخت</p><label className={cn('flex cursor-pointer items-start gap-3 rounded-xl border p-3.5', paymentMethod === 'sandbox' ? 'border-primary bg-teal-50' : 'border-border')}><input type="radio" name="pay" checked={paymentMethod === 'sandbox'} onChange={() => setPaymentMethod('sandbox')} className="mt-1 accent-teal-600" /><span><span className="block text-base font-bold">درگاه آنلاین</span><span className="block text-sm text-muted-foreground">پرداخت سریع و قطعی شدن نوبت</span></span></label>{hasCard && (<label className={cn('flex cursor-pointer items-start gap-3 rounded-xl border p-3.5', paymentMethod === 'card_to_card' ? 'border-primary bg-teal-50' : 'border-border')}><input type="radio" name="pay" checked={paymentMethod === 'card_to_card'} onChange={() => setPaymentMethod('card_to_card')} className="mt-1 accent-teal-600" /><span><span className="block text-base font-bold">کارت‌به‌کارت</span><span className="block text-sm text-muted-foreground">واریز به کارت + تأیید دستی</span></span></label>)}</div>{business.cancellationPolicy && (<div className="rounded-xl border border-border p-3 text-sm text-muted-foreground leading-7"><p className="font-bold text-foreground mb-1">قوانین لغو</p>{business.cancellationPolicy}</div>)}<label className="flex items-start gap-2 text-base cursor-pointer"><input type="checkbox" checked={policyAccepted} onChange={(e) => setPolicyAccepted(e.target.checked)} className="mt-1 accent-teal-600" /><span>قوانین رزرو و لغو را می‌پذیرم</span></label><div className="flex gap-2"><Button variant="ghost" className="flex-1" onClick={() => setStep(5)}>بازگشت</Button><Button className="flex-1" style={{ backgroundColor: primaryColor }} loading={loading} disabled={!policyAccepted} onClick={submitBooking}>{paymentMethod === 'card_to_card' ? 'ادامه واریز' : 'پرداخت آنلاین'}</Button></div></div>)}
+
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
         {error && step !== 8 && (<div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>)}
       </div>
     </div>

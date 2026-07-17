@@ -14,7 +14,18 @@ export function StaffManager() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+<<<<<<< HEAD
   const [form, setForm] = useState({ phone: '', firstName: '', lastName: '', jobTitle: '', role: 'staff', avatarUrl: '' });
+=======
+  const [form, setForm] = useState({
+    phone: '',
+    firstName: '',
+    lastName: '',
+    jobTitle: '',
+    role: 'staff',
+    avatarUrl: '',
+  });
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
   const [editingId, setEditingId] = useState(null);
   const [editAvatar, setEditAvatar] = useState('');
 
@@ -39,6 +50,14 @@ export function StaffManager() {
       if (form.avatarUrl && data.member?.id) {
         await fetch('/api/business/staff', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: data.member.id, avatarUrl: form.avatarUrl }) }).catch(()=>{});
       }
+      // if avatarUrl provided, update member immediately
+      if (form.avatarUrl) {
+        await fetch('/api/business/staff', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ memberId: data.member?.id || data.user?.id, avatarUrl: form.avatarUrl }),
+        }).catch(()=>{});
+      }
       setShowForm(false);
       setForm({ phone: '', firstName: '', lastName: '', jobTitle: '', role: 'staff', avatarUrl: '' });
       load();
@@ -46,36 +65,71 @@ export function StaffManager() {
   }
 
   async function toggleActive(member) {
+<<<<<<< HEAD
     await fetch('/api/business/staff', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId: member.id, isActive: !member.isActive }) });
+=======
+    await fetch('/api/business/staff', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId: member.id, isActive: !member.isActive }),
+    });
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
     load();
   }
 
   async function saveAvatar(memberId) {
     if (!editAvatar) return;
     setSaving(true);
+<<<<<<< HEAD
     await fetch('/api/business/staff', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ memberId, avatarUrl: editAvatar }) });
     setEditingId(null); setEditAvatar(''); setSaving(false); load();
+=======
+    await fetch('/api/business/staff', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId, avatarUrl: editAvatar }),
+    });
+    setEditingId(null);
+    setEditAvatar('');
+    setSaving(false);
+    load();
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
+<<<<<<< HEAD
         <h1 className="text-xl font-black">کارمندان • آپلود تصویر</h1>
+=======
+        <h1 className="text-xl font-black">کارمندان</h1>
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
         <Button size="sm" onClick={() => setShowForm((v) => !v)}>{showForm ? 'بستن' : 'افزودن نیرو'}</Button>
       </div>
 
       {showForm && (
         <Card>
+<<<<<<< HEAD
           <CardHeader><CardTitle>عضو جدید — با آپلود تصویر</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleAdd} className="space-y-4">
+=======
+          <CardHeader><CardTitle>عضو جدید</CardTitle></CardHeader>
+          <CardContent>
+            <form onSubmit={handleAdd} className="space-y-3">
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
               <Input label="موبایل" dir="ltr" placeholder="0912..." value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
               <div className="grid grid-cols-2 gap-2">
                 <Input label="نام" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
                 <Input label="نام خانوادگی" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
               </div>
               <Input label="عنوان شغلی" value={form.jobTitle} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} placeholder="آرایشگر، منشی..." />
+<<<<<<< HEAD
               <ImageUploader label="تصویر کارمند (آپلود مستقیم)" value={form.avatarUrl} onChange={(url) => setForm({ ...form, avatarUrl: url })} type="staff" accept="image/*" hint="تصویر پرسنلی — 400x400 WebP بهینه می‌شود" />
+=======
+              <Input label="تصویر کارمند (URL)" dir="ltr" value={form.avatarUrl} onChange={(e) => setForm({ ...form, avatarUrl: e.target.value })} placeholder="https://.../avatar.jpg یا خالی" />
+              {form.avatarUrl && <img src={form.avatarUrl} alt="avatar preview" className="size-20 rounded-full border object-cover" />}
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
               <div className="space-y-1">
                 <p className="text-sm font-medium">نقش</p>
                 <div className="flex gap-2">
@@ -84,8 +138,13 @@ export function StaffManager() {
                   ))}
                 </div>
               </div>
+<<<<<<< HEAD
               <p className="text-[11px] text-muted-foreground">اگر کاربر جدید باشد با رمز ۱۲۳۴۵۶ ساخته می‌شود. می‌توانید بعدا تصویرش را تغییر دهید.</p>
               <Button type="submit" className="w-full" loading={saving}>ذخیره کارمند</Button>
+=======
+              <p className="text-[11px] text-muted-foreground">اگر کاربر جدید باشد با رمز پیش‌فرض ۱۲۳۴۵۶ ساخته می‌شود.</p>
+              <Button type="submit" className="w-full" loading={saving}>ذخیره</Button>
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
             </form>
           </CardContent>
         </Card>
@@ -105,6 +164,7 @@ export function StaffManager() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold truncate">{[m.firstName, m.lastName].filter(Boolean).join(' ') || 'بدون نام'}</p>
                   <p className="text-xs text-muted-foreground mt-0.5 truncate" dir="ltr">{m.phone}{m.jobTitle ? ` · ${m.jobTitle}` : ''} {` · ${m.role}`}</p>
+<<<<<<< HEAD
                   <p className="text-[11px] text-muted-foreground mt-1 truncate">خدمات: {m.serviceIds?.length ? m.serviceIds.map((id) => services.find((s) => s.id === id)?.name || '…').join('، ') : '—'}</p>
                   {editingId === m.id ? (
                     <div className="mt-3 space-y-2">
@@ -113,6 +173,17 @@ export function StaffManager() {
                     </div>
                   ) : (
                     <button onClick={()=>{setEditingId(m.id); setEditAvatar(m.avatarUrl || m.userAvatarUrl || '');}} className="mt-2 text-[11px] text-primary font-bold hover:underline">🖼️ تغییر تصویر با آپلود</button>
+=======
+                  <p className="text-[11px] text-muted-foreground mt-1truncate">خدمات: {m.serviceIds?.length ? m.serviceIds.map((id) => services.find((s) => s.id === id)?.name || '…').join('، ') : '—'}</p>
+                  {editingId === m.id ? (
+                    <div className="mt-3 flex gap-2">
+                      <input value={editAvatar} onChange={(e)=>setEditAvatar(e.target.value)} placeholder="URL تصویر جدید" className="flex-1 rounded-lg border border-border px-2 py-1.5 text-xs" dir="ltr" />
+                      <Button size="sm" onClick={()=>saveAvatar(m.id)} loading={saving}>ذخیره</Button>
+                      <Button size="sm" variant="secondary" onClick={()=>{setEditingId(null); setEditAvatar('');}}>لغو</Button>
+                    </div>
+                  ) : (
+                    <button onClick={()=>{setEditingId(m.id); setEditAvatar(m.avatarUrl || m.userAvatarUrl || '');}} className="mt-2 text-[11px] text-primary font-bold hover:underline">🖼️ تغییر تصویر</button>
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
                   )}
                 </div>
               </div>

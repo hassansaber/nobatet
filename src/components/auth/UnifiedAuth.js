@@ -47,6 +47,7 @@ export function UnifiedAuth({ defaultRole = 'business_owner' }) {
     } catch { setError('ارتباط با سرور برقرار نشد'); } finally { setLoading(false); }
   }
 
+<<<<<<< HEAD
   async function resolveDestination(fallback) {
     try {
       const wsRes = await fetch('/api/auth/workspaces', { credentials: 'include' });
@@ -63,6 +64,8 @@ export function UnifiedAuth({ defaultRole = 'business_owner' }) {
     return fallback;
   }
 
+=======
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
   async function handleVerifyOtp(e) {
     e.preventDefault();
     setError(''); setLoading(true);
@@ -76,10 +79,18 @@ export function UnifiedAuth({ defaultRole = 'business_owner' }) {
       if (!data.ok) { setError(data.error || 'تأیید ناموفق'); return; }
       if (data.needsProfile) { setVerificationToken(data.verificationToken); setStep('profile'); return; }
       if (data.needsPasswordReset) { setVerificationToken(data.verificationToken); setStep('new-password'); return; }
+<<<<<<< HEAD
       let redirect = nextPath || data.redirectTo || '/me';
       if (ref && !redirect.includes('ref')) redirect += (redirect.includes('?') ? '&' : '?') + `ref=${ref}`;
       redirect = await resolveDestination(redirect);
       router.push(redirect);
+=======
+      const redirect = nextPath || data.redirectTo || '/me';
+      // append ref/plan if present
+      let finalRedirect = redirect;
+      if (ref && !finalRedirect.includes('ref')) finalRedirect += (finalRedirect.includes('?') ? '&' : '?') + `ref=${ref}`;
+      router.push(finalRedirect);
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
       router.refresh();
     } catch { setError('ارتباط با سرور برقرار نشد'); } finally { setLoading(false); }
   }
@@ -95,9 +106,13 @@ export function UnifiedAuth({ defaultRole = 'business_owner' }) {
       });
       const data = await res.json();
       if (!data.ok) { setError(data.error || 'ورود ناموفق'); return; }
+<<<<<<< HEAD
       let redirect = nextPath || data.redirectTo || '/me';
       redirect = await resolveDestination(redirect);
       router.push(redirect);
+=======
+      router.push(nextPath || data.redirectTo || '/me');
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
       router.refresh();
     } catch { setError('ارتباط با سرور برقرار نشد'); } finally { setLoading(false); }
   }
@@ -113,9 +128,13 @@ export function UnifiedAuth({ defaultRole = 'business_owner' }) {
       });
       const data = await res.json();
       if (!data.ok) { setError(data.error || 'ثبت‌نام ناموفق'); return; }
+<<<<<<< HEAD
       let redirect = nextPath || data.redirectTo || '/me';
       redirect = await resolveDestination(redirect);
       router.push(redirect);
+=======
+      router.push(nextPath || data.redirectTo || '/me');
+>>>>>>> 9d6d93e73c6231c2566720c9f0cd6f64dd9dc55d
       router.refresh();
     } catch { setError('ارتباط با سرور برقرار نشد'); } finally { setLoading(false); }
   }
