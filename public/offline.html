@@ -3,13 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0d9488" />
+    <meta name="theme-color" content="#0284C7" />
     <title>آفلاین | نوبتت</title>
     <style>
+      *{box-sizing:border-box}
       body {
-        font-family: Tahoma, Vazirmatn, sans-serif;
-        background: #f8fafc;
-        color: #0f172a;
+        font-family: Vazirmatn, Tahoma, sans-serif;
+        background: #F0F9FF;
+        color: #0F172A;
         margin: 0;
         min-height: 100dvh;
         display: flex;
@@ -19,44 +20,47 @@
         text-align: center;
       }
       .card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 16px;
+        background: rgba(255,255,255,0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.5);
+        border-radius: 20px;
         padding: 28px 22px;
         max-width: 360px;
-        box-shadow: 0 8px 30px rgba(15, 23, 42, 0.06);
+        width: 100%;
+        box-shadow: 0 8px 32px rgba(2,132,199,0.12);
       }
-      h1 {
-        font-size: 1.25rem;
-        margin: 0 0 8px;
-      }
-      p {
-        color: #64748b;
-        font-size: 0.9rem;
-        line-height: 1.7;
-        margin: 0 0 18px;
-      }
-      button {
-        background: #0d9488;
+      h1 { font-size: 1.1rem; margin: 0 0 8px; font-weight: 600; }
+      p { color: #475569; font-size: 0.85rem; line-height: 1.8; margin: 0 0 18px; }
+      .btn {
+        background: #0284C7;
         color: #fff;
         border: 0;
         border-radius: 12px;
-        height: 44px;
+        height: 40px;
         padding: 0 18px;
-        font-weight: 700;
+        font-weight: 500;
         cursor: pointer;
+        width: 100%;
+        font-size: 0.85rem;
+      }
+      .btn-secondary {
+        background: white;
+        color: #0F172A;
+        border: 1px solid #E0F0F8;
+        margin-top: 8px;
       }
     </style>
   </head>
   <body>
     <div class="card">
-      <div style="font-size: 2rem; margin-bottom: 8px">📡</div>
-      <h1>اتصال اینترنت قطع است</h1>
+      <div style="width:48px;height:48px;background:#0284C71A;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#0284C7">!</div>
+      <h1>اتصال برقرار نیست</h1>
       <p>
-        نوبتت به‌صورت آفلاین محدود کار می‌کند. پس از وصل شدن دوباره تلاش کنید.
-        نوبت‌های امروز در صورت کش‌شدن قبلی ممکن است در دسترس باشند.
+        به نظر می‌رسد اینترنت شما قطع است. نوبتت به صورت محدود آفلاین کار می‌کند.<br/>
+        اگر این صفحه بعد از ورود نمایش داده می‌شود، لطفا کوکی‌ها را پاک و دوباره وارد شوید.
       </p>
-      <button onclick="location.reload()">تلاش مجدد</button>
+      <button class="btn" onclick="location.reload()">تلاش مجدد</button>
+      <button class="btn btn-secondary" onclick="location.href='/'">بازگشت به خانه</button>
     </div>
   </body>
 </html>

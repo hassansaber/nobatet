@@ -2,6 +2,15 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { Crown, Handshake, Building2, Briefcase, User, ArrowLeftRight, ChevronDown, LayoutDashboard } from 'lucide-react';
+
+const ICON_MAP = {
+  crown: Crown,
+  handshake: Handshake,
+  building: Building2,
+  briefcase: Briefcase,
+  user: User,
+};
 
 export function WorkspaceSwitcher() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -20,14 +29,9 @@ export function WorkspaceSwitcher() {
     })();
   }, []);
 
-  // Close on Escape and click outside
   useEffect(() => {
-    function onKey(e) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    function onClickOutside(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false);
-    }
+    function onKey(e) { if (e.key === 'Escape') setOpen(false); }
+    function onClickOutside(e) { if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false); }
     if (open) {
       document.addEventListener('keydown', onKey);
       document.addEventListener('mousedown', onClickOutside);
@@ -48,40 +52,59 @@ export function WorkspaceSwitcher() {
     router.push(ws.href);
   }
 
+  // Current workspace from cookie or first
+  const current = workspaces[0];
+  const CurrentIcon = current ? (ICON_MAP[current.icon] || Building2) : Building2;
+
   return (
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`سوییچ فضای کاری، ${workspaces.length} فضا`}
-        className="flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-2 text-xs font-bold hover:border-primary hover:bg-slate-50 transition-all cursor-pointer min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+        className="flex items-center gap-2 rounded-xl glass px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/60 transition-all cursor-pointer min-h-[32px]"
       >
-        <span className="size-5 rounded-full bg-primary text-white flex items-center justify-center text-[10px]" aria-hidden>⇄</span>
-        <span>فضا ({workspaces.length})</span>
+        <span className="size-6 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: current?.color || '#0284C7' }}>
+          <CurrentIcon className="size-3.5" />
+        </span>
+        <span className="hidden sm:inline max-w-[90px] truncate">{current?.title || 'فضا'}</span>
+        <span className="text-[10px] bg-slate-900 text-white px-1.5 py-0.5 rounded-full">{workspaces.length}</span>
+        <ChevronDown className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div role="menu" aria-label="فضاهای کاری" className="absolute top-full mt-2 right-0 z-50 w-72 rounded-2xl border border-border bg-white shadow-xl p-2 animate-in fade-in slide-in-from-top-2">
-          <p className="text-[11px] text-muted-foreground px-2 py-1" id="ws-label">فضاهای کاری شما</p>
-          <div className="space-y-1 mt-1 max-h-64 overflow-auto" aria-labelledby="ws-label">
-            {workspaces.map((ws) => (
-              <button
-                key={ws.key}
-                role="menuitem"
-                onClick={() => select(ws)}
-                className="w-full text-right flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-slate-50 border border-transparent hover:border-border transition-colors cursor-pointer min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 text-left"
-              >
-                <span className="size-8 rounded-xl flex items-center justify-center text-sm shrink-0" style={{ backgroundColor: ws.color + '20', color: ws.color }} aria-hidden>{ws.icon}</span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-bold truncate">{ws.title}</span>
-                  <span className="block text-[11px] text-muted-foreground truncate">{ws.roleLabel} • {ws.desc?.slice(0, 30)}</span>
-                </span>
-              </button>
-            ))}
+        <div role="menu" className="absolute top-full mt-2 right-0 z-50 w-80 rounded-2xl border border-white/40 glass-strong shadow-xl p-2">
+          <div className="flex items-center justify-between px-2 py-1">
+            <p className="text-[11px] font-medium text-muted-foreground">فضاهای کاری شما</p>
+            <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full">{workspaces.length} فضا</span>
           </div>
-          <div className="border-t mt-2 pt-2">
-            <button role="menuitem" onClick={() => { setOpen(false); router.push('/choose-workspace'); }} className="w-full text-center text-xs text-primary font-bold py-2.5 rounded-xl hover:bg-teal-50 cursor-pointer min-h-[44px]">
-              نمایش همه در صفحه انتخاب →
+          <div className="space-y-1 mt-2 max-h-72 overflow-auto">
+            {workspaces.map((ws) => {
+              const Icon = ICON_MAP[ws.icon] || Building2;
+              return (
+                <button
+                  key={ws.key}
+                  role="menuitem"
+                  onClick={() => select(ws)}
+                  className="w-full text-right flex items-center gap-2.5 rounded-xl px-3 py-2.5 hover:bg-white/60 border border-transparent hover:border-white/40 transition-all cursor-pointer"
+                >
+                  <span className="size-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: ws.color + '18', color: ws.color }}>
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="flex-1 min-w-0 text-left">
+                    <span className="block text-[12px] font-medium truncate">{ws.title}</span>
+                    <span className="block text-[10px] text-muted-foreground truncate">{ws.roleLabel} • {ws.businessSlug || ws.type}</span>
+                  </span>
+                  <LayoutDashboard className="size-3 text-muted-foreground" />
+                </button>
+              );
+            })}
+          </div>
+          <div className="border-t border-white/40 mt-2 pt-2 grid grid-cols-2 gap-2">
+            <button onClick={() => { setOpen(false); router.push('/choose-workspace'); }} className="text-[11px] font-medium py-2.5 rounded-xl glass hover:bg-white/70 cursor-pointer">
+              صفحه انتخاب
+            </button>
+            <button onClick={() => { setOpen(false); router.push('/business'); }} className="text-[11px] font-medium py-2.5 rounded-xl bg-primary text-white hover:bg-secondary cursor-pointer">
+              + کسب‌وکار جدید
             </button>
           </div>
         </div>

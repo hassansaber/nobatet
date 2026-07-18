@@ -1,5 +1,5 @@
-/* نوبتت Service Worker — v3 - bypass uploads & api files + new cache */
-const CACHE = 'nobatet-v3';
+/* نوبتت Service Worker — v4 - fixed offline redirect bug */
+const CACHE = 'nobatet-v4';
 const PRECACHE = [
   '/offline.html',
   '/icon-192.png',
@@ -34,8 +34,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Critical: Never cache uploads or api/files or favicon - always network only
-  // Fixes: upload POST 200 but GET 404 from service worker returning cached 404
+  // Never cache uploads or api/files or favicon - always network only
   if (
     url.pathname.startsWith('/uploads/') ||
     url.pathname.startsWith('/api/files/') ||
@@ -45,33 +44,48 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/apple-icon.png'
   ) {
     event.respondWith(
-      fetch(request).then((res) => {
-        // Don't cache, just return
-        return res;
-      }).catch(() => {
+      fetch(request).catch(() => {
         return new Response('File not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
       })
     );
     return;
   }
 
-  // API: network-first, no aggressive caching - only cache bookings list slightly
+  // API: network-first
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request));
     return;
   }
 
-  // Navigations: network-first with offline fallback
+  // Navigations: network-first, but only fallback to offline.html if truly offline and same-origin
+  // Fix: do not return offline.html response that would cause URL to become /offline.html
+  // Instead, if fetch fails, try network again, then return offline.html content with 200 but keep original URL via Response
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match('/offline.html').then((r) => r || caches.match('/')),
-      ),
+      fetch(request)
+        .then((response) => {
+          // If server returns offline.html redirect? No, just return response as is (even if 404, let Next handle)
+          return response;
+        })
+        .catch(async () => {
+          // Only if offline, return offline page content directly (not cached response that would change URL)
+          const cached = await caches.match('/offline.html');
+          if (cached) {
+            // Clone body to avoid cache lock
+            const body = await cached.text();
+            return new Response(body, {
+              status: 503,
+              statusText: 'Offline',
+              headers: { 'Content-Type': 'text/html; charset=utf-8' },
+            });
+          }
+          return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+        }),
     );
     return;
   }
 
-  // Static assets: cache-first with freshness check
+  // Static assets: cache-first
   event.respondWith(cacheFirst(request));
 });
 
@@ -80,17 +94,16 @@ async function cacheFirst(request) {
   if (cached) return cached;
   try {
     const res = await fetch(request);
-    // Only cache same-origin OK responses, not html navigations
     if (res.ok && request.url.startsWith(self.location.origin) && !request.url.includes('/api/')) {
       const cache = await caches.open(CACHE);
-      // Don't cache favicon if old
-      if (!request.url.endsWith('favicon.ico')) {
+      if (!request.url.endsWith('favicon.ico') && !request.url.endsWith('offline.html')) {
         cache.put(request, res.clone());
       }
     }
     return res;
   } catch {
-    return caches.match('/offline.html');
+    // Don't return offline.html for assets
+    return fetch(request);
   }
 }
 
