@@ -571,7 +571,9 @@ export async function updateBusinessSettings(businessId, data) {
     if (data[k] !== undefined) patch[k] = data[k];
   }
   if (data.galleryUrls !== undefined) {
-    patch.galleryUrls = Array.isArray(data.galleryUrls) ? data.galleryUrls : [];
+    const arr = Array.isArray(data.galleryUrls) ? data.galleryUrls : [];
+    // سقف گالری ۱۰ عدد - مثل درخواست کاربر
+    patch.galleryUrls = arr.slice(0, 10);
   }
   if (data.depositPercent != null) {
     patch.depositPercent = Math.min(100, Math.max(0, Number(data.depositPercent)));

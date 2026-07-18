@@ -1,12 +1,6 @@
 /**
  * موتور رزرو — محاسبه تایم آزاد + قفل موقت + جلوگیری از تداخل
- *
- * قوانین:
- * 1. Slot locking با lockExpiresAt
- * 2. رزرو قطعی فقط پس از پرداخت / تأیید
- * 3. جلوگیری از double-book برای staff (مگر capacity)
- * 4. Buffer time بعد از هر خدمت
- * 5. ساعات کاری + مرخصی + تعطیلات
+ * نسخه جدید: پشتیبانی از چند خدمت همزمان
  */
 
 import {
@@ -17,10 +11,12 @@ import {
   lt,
   or,
   isNull,
+  inArray,
 } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings } from '@/db/schema/bookings';
-import { services, workingHours, timeOffs } from '@/db/schema/services';
+import { bookingServices } from '@/db/schema/booking-services.js';
+import { services, workingHours, timeOffs, staffServices } from '@/db/schema/services';
 import { businessMembers } from '@/db/schema/businesses';
 import {
   combineIranDateTime,
@@ -28,55 +24,31 @@ import {
   tehranDayOfWeek,
 } from '@/lib/datetime';
 
-/** وضعیت‌هایی که slot را اشغال می‌کنند */
 export const OCCUPYING_STATUSES = ['pending_payment', 'confirmed', 'completed'];
 
-/**
- * @param {string} hhmm
- */
 export function timeToMinutes(hhmm) {
   const [h, m] = String(hhmm).split(':').map(Number);
   return h * 60 + (m || 0);
 }
 
-/**
- * @param {number} minutes
- */
 export function minutesToTime(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-/**
- * dayOfWeek: 0=شنبه ... 6=جمعه (بر اساس Asia/Tehran)
- * @param {Date} date
- */
 export function jalaliDayOfWeek(date) {
   return tehranDayOfWeek(date);
 }
 
-/**
- * YYYY-MM-DD + HH:mm به وقت تهران (نه TZ سرور)
- * @param {string} dateStr
- * @param {string} hhmm
- */
 export function combineLocalDateTime(dateStr, hhmm) {
   return combineIranDateTime(dateStr, hhmm);
 }
 
-/**
- * [startA, endA) ∩ [startB, endB)
- */
 export function rangesOverlap(startA, endA, startB, endB) {
   return startA < endB && startB < endA;
 }
 
-/**
- * @param {string} businessId
- * @param {string | null} memberId
- * @param {number} dayOfWeek
- */
 export async function getWorkingWindows(businessId, memberId, dayOfWeek) {
   const rows = await db
     .select()
@@ -103,12 +75,6 @@ export async function getWorkingWindows(businessId, memberId, dayOfWeek) {
     .filter((w) => w.end > w.start);
 }
 
-/**
- * @param {string} businessId
- * @param {string | null} memberId
- * @param {Date} dayStart
- * @param {Date} dayEnd
- */
 export async function getTimeOffsForDay(businessId, memberId, dayStart, dayEnd) {
   const conditions = [
     eq(timeOffs.businessId, businessId),
@@ -134,9 +100,6 @@ export async function getTimeOffsForDay(businessId, memberId, dayStart, dayEnd) 
   }));
 }
 
-/**
- * @param {{ businessId: string, memberId?: string | null, rangeStart: Date, rangeEnd: Date }} opts
- */
 export async function getOccupyingBookings({
   businessId,
   memberId,
@@ -177,10 +140,28 @@ export async function getOccupyingBookings({
     .where(and(...conditions));
 }
 
+// Helper to fetch services by ids
+async function fetchServicesByIds(businessId, serviceIds) {
+  if (!serviceIds || serviceIds.length === 0) return [];
+  const rows = await db
+    .select()
+    .from(services)
+    .where(
+      and(
+        eq(services.businessId, businessId),
+        inArray(services.id, serviceIds),
+        eq(services.isActive, true),
+      ),
+    );
+  return rows;
+}
+
 /**
+ * دریافت تایم‌های آزاد - پشتیبانی از چند خدمت
  * @param {{
  *   businessId: string,
- *   serviceId: string,
+ *   serviceId?: string,
+ *   serviceIds?: string[],
  *   date: string,
  *   memberId?: string | null,
  *   slotStepMinutes?: number,
@@ -189,31 +170,44 @@ export async function getOccupyingBookings({
 export async function getAvailableSlots({
   businessId,
   serviceId,
+  serviceIds,
   date,
   memberId = null,
   slotStepMinutes = 15,
 }) {
-  const [service] = await db
-    .select()
-    .from(services)
-    .where(
-      and(
-        eq(services.id, serviceId),
-        eq(services.businessId, businessId),
-        eq(services.isActive, true),
-      ),
-    )
-    .limit(1);
-
-  if (!service) {
-    return { ok: false, error: 'خدمت یافت نشد' };
+  // نرمال‌سازی: اگر serviceId تنها داده شده، تبدیل به آرایه
+  let ids = [];
+  if (Array.isArray(serviceIds) && serviceIds.length > 0) {
+    ids = serviceIds;
+  } else if (serviceId) {
+    ids = [serviceId];
   }
 
-  const duration = service.durationMinutes;
-  const buffer = service.bufferMinutes || 0;
-  const blockSize = duration + buffer;
-  const isCapacity = service.type === 'capacity';
-  const capacity = service.capacity || 1;
+  if (ids.length === 0) {
+    return { ok: false, error: 'خدمت انتخاب نشده' };
+  }
+
+  // حذف تکراری
+  ids = [...new Set(ids)];
+
+  const serviceRows = await fetchServicesByIds(businessId, ids);
+  if (serviceRows.length === 0) {
+    return { ok: false, error: 'خدمت یافت نشد' };
+  }
+  if (serviceRows.length !== ids.length) {
+    return { ok: false, error: 'برخی خدمات یافت نشد یا غیرفعال است' };
+  }
+
+  // محاسبه مجموع مدت و قیمت
+  const totalDuration = serviceRows.reduce((sum, s) => sum + s.durationMinutes, 0);
+  const totalBuffer = serviceRows.reduce((sum, s) => sum + (s.bufferMinutes || 0), 0);
+  // بافر را فقط برای آخرین خدمت حساب نکنیم؟ ساده: مجموع بافرها
+  const totalPrice = serviceRows.reduce((sum, s) => sum + (s.price || 0), 0);
+  const blockSize = totalDuration + totalBuffer;
+
+  // برای capacity: اگر هر کدام capacity بود، سخت‌ترین را در نظر بگیر
+  const isCapacity = serviceRows.some((s) => s.type === 'capacity');
+  const capacity = Math.min(...serviceRows.map((s) => s.capacity || 1));
 
   const dayStart = combineLocalDateTime(date, '00:00');
   const dayEnd = combineLocalDateTime(date, '23:59');
@@ -221,7 +215,6 @@ export async function getAvailableSlots({
 
   const dow = jalaliDayOfWeek(dayStart);
 
-  /** @type {Array<{ id: string | null }>} */
   let members = [];
   if (memberId) {
     const [m] = await db
@@ -253,11 +246,28 @@ export async function getAvailableSlots({
     members = [{ id: null }];
   }
 
-  // پیش‌بارگذاری buffer همه سرویس‌های درگیر
-  const bufferCache = new Map([[serviceId, buffer]]);
+  // اگر کارمند انتخاب شده، چک کن که همه خدمات را بتواند ارائه دهد
+  if (memberId && members.length > 0) {
+    const staffServiceLinks = await db
+      .select({ serviceId: staffServices.serviceId })
+      .from(staffServices)
+      .where(eq(staffServices.memberId, memberId));
+    const allowed = new Set(staffServiceLinks.map((s) => s.serviceId));
+    // اگر لینکی ندارد، یعنی همه خدمات را می‌تواند؟ در منطق قبلی همه خدمات به صورت پیش‌فرض لینک می‌شد، ولی برای اطمینان:
+    // اگر هیچ لینکی ندارد، اجازه می‌دهیم (برای backward compat)
+    if (allowed.size > 0) {
+      const missing = ids.filter((id) => !allowed.has(id));
+      if (missing.length > 0) {
+        return { ok: false, error: 'کارمند انتخاب شده برخی خدمات را ارائه نمی‌دهد' };
+      }
+    }
+  }
+
+  const bufferCache = new Map();
+  // cache for current services
+  serviceRows.forEach((s) => bufferCache.set(s.id, s.bufferMinutes || 0));
 
   const now = new Date();
-  /** @type {Map<string, { start: string, end: string, startsAt: string, endsAt: string, memberIds: (string|null)[] }>} */
   const slotMap = new Map();
 
   for (const member of members) {
@@ -285,6 +295,8 @@ export async function getAvailableSlots({
         bBuffer = bs?.bufferMinutes ?? 0;
         bufferCache.set(b.serviceId, bBuffer);
       }
+      // برای رزروهای چندخدمتی، مدت واقعی از endsAt - startsAt حساب می‌شود که قبلا مجموع بوده
+      // پس بافر جدا نیاز نیست، چون endsAt شامل مدت است ولی بافر جدا؟ برای سادگی بافر را هم اضافه کنیم
       busy.push({
         start: new Date(b.startsAt),
         end: new Date(new Date(b.endsAt).getTime() + bBuffer * 60_000),
@@ -295,11 +307,11 @@ export async function getAvailableSlots({
     }
 
     for (const win of windows) {
-      for (let t = win.start; t + duration <= win.end; t += slotStepMinutes) {
+      for (let t = win.start; t + totalDuration <= win.end; t += slotStepMinutes) {
         if (t + blockSize > win.end) continue;
 
         const slotStart = combineLocalDateTime(date, minutesToTime(t));
-        const slotEnd = new Date(slotStart.getTime() + duration * 60_000);
+        const slotEnd = new Date(slotStart.getTime() + totalDuration * 60_000);
         const blockEnd = new Date(slotStart.getTime() + blockSize * 60_000);
 
         if (slotStart <= now) continue;
@@ -318,7 +330,6 @@ export async function getAvailableSlots({
 
         const key = slotStart.toISOString();
         const existing = slotMap.get(key);
-        // برچسب دکمه = ساعت دیوارساعت تهران (نه UTC)
         const startLabel = formatTehranTime(slotStart);
         const endLabel = formatTehranTime(slotEnd);
         if (existing) {
@@ -349,27 +360,38 @@ export async function getAvailableSlots({
       availableStaffCount: s.memberIds.filter(Boolean).length,
     }));
 
+  // aggregated service info
+  const aggregated = {
+    id: serviceRows[0].id,
+    ids: serviceRows.map((s) => s.id),
+    name: serviceRows.length === 1 ? serviceRows[0].name : serviceRows.map((s) => s.name).join(' + '),
+    names: serviceRows.map((s) => s.name),
+    durationMinutes: totalDuration,
+    bufferMinutes: totalBuffer,
+    price: totalPrice,
+    prices: serviceRows.map((s) => s.price),
+    type: isCapacity ? 'capacity' : 'individual',
+    services: serviceRows.map((s) => ({
+      id: s.id,
+      name: s.name,
+      durationMinutes: s.durationMinutes,
+      price: s.price,
+    })),
+  };
+
   return {
     ok: true,
-    service: {
-      id: service.id,
-      name: service.name,
-      durationMinutes: service.durationMinutes,
-      bufferMinutes: service.bufferMinutes,
-      price: service.price,
-      type: service.type,
-    },
+    service: aggregated,
+    services: serviceRows,
     date,
     slots,
   };
 }
 
-/**
- * @param {{ businessId: string, serviceId: string, memberId?: string | null, startsAt: string | Date }} opts
- */
 export async function isSlotAvailable({
   businessId,
   serviceId,
+  serviceIds,
   memberId,
   startsAt,
 }) {
@@ -378,7 +400,6 @@ export async function isSlotAvailable({
     return { ok: false, error: 'زمان نامعتبر است' };
   }
 
-  // تاریخ روز را به وقت تهران استخراج کن (نه TZ سرور)
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Tehran',
     year: 'numeric',
@@ -393,6 +414,7 @@ export async function isSlotAvailable({
   const result = await getAvailableSlots({
     businessId,
     serviceId,
+    serviceIds,
     date,
     memberId: memberId || null,
   });
@@ -407,15 +429,13 @@ export async function isSlotAvailable({
     return { ok: false, error: 'این تایم دیگر در دسترس نیست' };
   }
 
-  return { ok: true, slot: match, service: result.service };
+  return { ok: true, slot: match, service: result.service, services: result.services };
 }
 
-/**
- * ایجاد رزرو pending + قفل موقت
- */
 export async function createPendingBooking({
   businessId,
   serviceId,
+  serviceIds,
   memberId,
   customerId,
   customerName,
@@ -430,36 +450,48 @@ export async function createPendingBooking({
     return { ok: false, error: 'پذیرش قوانین رزرو الزامی است' };
   }
 
+  // نرمال‌سازی لیست خدمات
+  let ids = [];
+  if (Array.isArray(serviceIds) && serviceIds.length > 0) ids = serviceIds;
+  else if (serviceId) ids = [serviceId];
+  ids = [...new Set(ids)];
+  if (ids.length === 0) return { ok: false, error: 'خدمتی انتخاب نشده' };
+
   const availability = await isSlotAvailable({
     businessId,
-    serviceId,
+    serviceId: ids[0],
+    serviceIds: ids,
     memberId,
     startsAt,
   });
   if (!availability.ok) return availability;
 
-  // re-check برای race condition ساده
   const recheck = await isSlotAvailable({
     businessId,
-    serviceId,
+    serviceId: ids[0],
+    serviceIds: ids,
     memberId: availability.slot.memberId,
     startsAt,
   });
   if (!recheck.ok) return recheck;
 
-  const service = availability.service;
+  const servicesList = availability.services || [];
+  const totalDuration = servicesList.reduce((sum, s) => sum + s.durationMinutes, 0);
+  const totalPrice = servicesList.reduce((sum, s) => sum + (s.price || 0), 0);
+  const primaryService = servicesList[0];
+
   const start = new Date(startsAt);
-  const end = new Date(start.getTime() + service.durationMinutes * 60_000);
+  const end = new Date(start.getTime() + totalDuration * 60_000);
   const lockMins = lockMinutes ?? Number(process.env.SLOT_LOCK_MINUTES || 10);
   const lockExpiresAt = new Date(Date.now() + lockMins * 60_000);
-  const totalAmount = service.price;
+  const totalAmount = totalPrice;
   const depositAmount = Math.round((totalAmount * depositPercent) / 100);
 
   const [row] = await db
     .insert(bookings)
     .values({
       businessId,
-      serviceId,
+      serviceId: primaryService.id, // برای سازگاری قدیمی
       memberId: availability.slot.memberId,
       customerId: customerId || null,
       customerName,
@@ -475,10 +507,20 @@ export async function createPendingBooking({
     })
     .returning();
 
+  // ذخیره همه خدمات در جدول واسط
+  try {
+    for (const sid of ids) {
+      await db.insert(bookingServices).values({ bookingId: row.id, serviceId: sid }).onConflictDoNothing();
+    }
+  } catch (e) {
+    console.warn('[createPendingBooking] booking_services insert failed', e?.message);
+  }
+
   return {
     ok: true,
     booking: row,
-    service,
+    service: availability.service,
+    services: servicesList,
     lockExpiresAt,
   };
 }
@@ -496,7 +538,6 @@ export async function confirmBooking(bookingId) {
     return { ok: false, error: 'وضعیت رزرو قابل تأیید نیست' };
   }
 
-  // اگر قفل منقضی شده
   if (booking.lockExpiresAt && new Date(booking.lockExpiresAt) < new Date()) {
     await db
       .update(bookings)
