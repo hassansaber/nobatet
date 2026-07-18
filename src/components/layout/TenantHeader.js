@@ -86,30 +86,26 @@ export function TenantHeader({ businessName, businessLogo, primaryColor = '#0284
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/" className="hidden sm:inline-flex h-9 items-center rounded-xl border border-border bg-white/80 px-3 text-xs font-bold hover:bg-white cursor-pointer backdrop-blur">
-            خانه نوبتت
-          </Link>
-
           {loading ? (
             <div className="h-9 w-24 rounded-xl bg-slate-100 animate-pulse" />
           ) : user ? (
             <>
-              <div className="hidden sm:flex items-center gap-2 rounded-xl bg-teal-50 border border-teal-200 px-3 py-1.5">
+              <div className="hidden sm:flex items-center gap-2 rounded-xl bg-white/60 backdrop-blur border border-white/40 px-3 py-1.5 shadow-sm">
                 <div className="size-6 rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-black">
                   {(user.firstName?.[0] || user.phone?.slice(-2) || 'ک')[0]}
                 </div>
-                <span className="text-xs font-bold text-teal-900 max-w-[80px] truncate">
+                <span className="text-xs font-bold text-foreground max-w-[80px] truncate">
                   {user.firstName || user.phone}
                 </span>
                 <span className="size-1.5 rounded-full bg-green-500 animate-pulse" />
               </div>
-              <Link href={dashboardHref} className="inline-flex h-9 items-center rounded-xl bg-slate-900 text-white px-4 text-xs font-black hover:bg-slate-800 cursor-pointer">
+              <Link href={dashboardHref} className="inline-flex h-9 items-center rounded-xl bg-slate-900 text-white px-4 text-xs font-black hover:bg-slate-800 cursor-pointer shadow-md">
                 داشبورد
               </Link>
             </>
           ) : (
             <>
-              <Link href={`${homeUrl}/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '/')}`} className="h-9 inline-flex items-center rounded-xl border border-border bg-white px-4 text-xs font-bold hover:bg-slate-50 cursor-pointer">
+              <Link href={`${homeUrl}/login?next=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '/')}`} className="h-9 inline-flex items-center rounded-xl border border-white/40 bg-white/60 backdrop-blur px-4 text-xs font-bold hover:bg-white cursor-pointer">
                 ورود
               </Link>
               <Link href={`${homeUrl}/register`} className="h-9 inline-flex items-center rounded-xl bg-primary text-white px-4 text-xs font-black shadow-md hover:bg-secondary cursor-pointer">

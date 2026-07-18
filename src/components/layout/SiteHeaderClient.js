@@ -51,24 +51,24 @@ export function SiteHeaderClient({ isLoggedIn, dashboardHref, userLabel }) {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link
             href="/"
-            className="group flex items-center gap-2.5 min-w-0"
+            className="group flex items-center gap-3 min-w-0"
             onClick={() => setOpen(false)}
           >
-            <span className="relative size-9 shrink-0 overflow-hidden rounded-xl ring-1 ring-teal-900/10 shadow-md shadow-teal-900/10 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-[-3deg]">
+            <span className="relative size-11 shrink-0 overflow-hidden rounded-2xl shadow-lg shadow-primary/15 ring-1 ring-black/5 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-[-2deg]">
               <Image
                 src="/logo-icon.png"
                 alt="لوگوی نوبتت"
-                width={36}
-                height={36}
-                className="object-cover"
+                width={44}
+                height={44}
+                className="object-cover w-full h-full"
                 priority
               />
             </span>
             <span className="flex flex-col leading-none">
-              <span className="text-lg font-black tracking-tight text-foreground">
+              <span className="text-[19px] font-black tracking-tight text-foreground">
                 نوبتت
               </span>
-              <span className="hidden text-[10px] font-medium text-muted-foreground sm:block">
+              <span className="hidden text-[11px] font-bold text-muted-foreground sm:block tracking-wide">
                 نوبت‌دهی هوشمند
               </span>
             </span>

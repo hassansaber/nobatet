@@ -169,28 +169,66 @@ export default function HomePage() {
 
               <ScaleIn className="order-1 lg:order-2" delay={0.1}>
                 <div className="relative mx-auto w-full max-w-lg">
-                  <div className="absolute -inset-3 rounded-[2rem] bg-gradient-to-br from-teal-400/30 via-cyan-300/20 to-transparent blur-2xl" />
-                  {/* Device Mockup - App Store Style */}
-                  <div className="relative mx-auto w-[280px] sm:w-[320px]">
-                    <div className="relative rounded-[2.5rem] border-[8px] border-slate-900 bg-slate-900 shadow-2xl shadow-teal-900/20 overflow-hidden">
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-6 w-20 bg-slate-900 rounded-b-xl z-10" />
-                      <div className="relative overflow-hidden rounded-[1.8rem] bg-white aspect-[9/19]">
-                        <Image src="/images/dashboard-preview.jpg" alt="پیش‌نمایش اپ نوبتت" width={400} height={800} className="h-full w-full object-cover object-top" priority />
-                        <div className="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-slate-900/80 to-transparent" />
-                        <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-white/90 backdrop-blur p-3 shadow-lg">
-                          <p className="text-[10px] text-muted-foreground">امروز</p>
-                          <p className="text-xs font-black text-teal-700">۱۲ نوبت تأییدشده ✓</p>
+                  {/* Glassmorphism hero with gradient - no mobile mockup */}
+                  <div className="absolute -inset-6 rounded-[2.5rem] bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/10 blur-3xl" />
+                  <div className="absolute -top-10 -right-10 size-32 rounded-full bg-gradient-to-br from-primary to-secondary opacity-20 blur-2xl animate-float" />
+                  <div className="absolute -bottom-10 -left-10 size-40 rounded-full bg-gradient-to-br from-accent to-primary opacity-15 blur-2xl animate-float" style={{ animationDelay: '1.5s' }} />
+                  
+                  <div className="relative grid gap-4">
+                    {/* Main glass card */}
+                    <div className="rounded-[2rem] border border-white/40 bg-white/70 backdrop-blur-2xl p-6 shadow-[0_20px_60px_rgba(2,132,199,0.15)]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="size-3 rounded-full bg-green-500 animate-pulse" />
+                          <p className="text-xs font-bold text-slate-600">سیستم فعال</p>
+                        </div>
+                        <span className="text-[10px] bg-slate-900 text-white px-2.5 py-1 rounded-full font-bold">LIVE</span>
+                      </div>
+                      <div className="relative overflow-hidden rounded-2xl bg-slate-900 p-4 text-white">
+                        <div className="absolute -top-10 -right-10 size-32 bg-primary/20 rounded-full blur-2xl" />
+                        <p className="text-[11px] text-white/60">درآمد امروز</p>
+                        <p className="text-2xl font-black mt-1">۲,۴۵۰,۰۰۰ ت</p>
+                        <div className="mt-3 flex items-center gap-2 text-[11px]">
+                          <span className="bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full">+۱۲٪</span>
+                          <span className="text-white/60">نسبت به دیروز</span>
                         </div>
                       </div>
+                      <div className="mt-4 grid grid-cols-3 gap-3">
+                        {[
+                          { label: 'نوبت امروز', value: '۱۴', color: 'bg-blue-500' },
+                          { label: 'تأیید شده', value: '۱۲', color: 'bg-green-500' },
+                          { label: 'در انتظار', value: '۲', color: 'bg-amber-500' },
+                        ].map((stat) => (
+                          <div key={stat.label} className="rounded-xl bg-white/60 border border-white/40 p-3 text-center backdrop-blur">
+                            <div className={`mx-auto size-1.5 rounded-full ${stat.color} mb-1.5`} />
+                            <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+                            <p className="text-sm font-black mt-0.5">{stat.value}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    {/* Floating cards */}
-                    <div className="absolute -right-4 top-20 rounded-2xl border border-border bg-white px-3 py-2 shadow-xl animate-float">
-                      <p className="text-[10px] text-muted-foreground">درآمد امروز</p>
-                      <p className="text-sm font-black">۱,۲۵۰,۰۰۰ ت</p>
-                    </div>
-                    <div className="absolute -left-4 bottom-20 rounded-2xl border border-border bg-white px-3 py-2 shadow-xl animate-float" style={{ animationDelay: '1s' }}>
-                      <p className="text-[10px] text-muted-foreground">مشتری جدید</p>
-                      <p className="text-xs font-bold">سارا احمدی</p>
+
+                    {/* Two floating glass cards */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl p-4 shadow-lg animate-float">
+                        <p className="text-[10px] text-muted-foreground">مشتری جدید</p>
+                        <p className="text-sm font-black mt-1">سارا احمدی</p>
+                        <p className="text-[11px] text-muted-foreground mt-1">کوتاهی مو • ۱۸:۳۰</p>
+                        <div className="mt-2 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-full w-[80%] bg-primary rounded-full" />
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl p-4 shadow-lg animate-float" style={{ animationDelay: '0.8s' }}>
+                        <p className="text-[10px] text-muted-foreground">یادآوری پیامکی</p>
+                        <p className="text-xs font-bold mt-1">۳ پیامک ارسال شد ✓</p>
+                        <div className="mt-2 flex -space-x-2 space-x-reverse">
+                          {[1,2,3].map(i => (
+                            <div key={i} className="size-6 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-black">
+                              {String.fromCharCode(64+i)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

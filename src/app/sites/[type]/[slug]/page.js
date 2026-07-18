@@ -131,7 +131,7 @@ export default async function TenantLandingPage({ params }) {
                 { icon: '💎', title: 'پشتیبانی اختصاصی', desc: 'من به عنوان ویزیتور، راه‌اندازی و آموزش اولیه را کمکت می‌کنم' },
                 { icon: '📈', title: 'رشد تضمینی', desc: 'کاهش تلفن‌ها، افزایش رزرو آنلاین و یادآوری خودکار' },
               ].map((b) => (
-                <div key={b.title} className="rounded-2xl border border-border bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+                <div key={b.title} className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl p-5 shadow-lg shadow-sm hover:shadow-md transition-shadow">
                   <div className="size-11 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xl">{b.icon}</div>
                   <h4 className="mt-4 font-black">{b.title}</h4>
                   <p className="mt-2 text-sm text-muted-foreground leading-7">{b.desc}</p>
@@ -269,7 +269,7 @@ export default async function TenantLandingPage({ params }) {
             { v: `${biz.staff?.length || 1}+`, l: 'متخصص' },
             { v: '★ 4.9', l: 'رضایت مشتری' },
           ].map((s) => (
-            <div key={s.l} className="rounded-2xl bg-white border border-border p-3 text-center shadow-sm">
+            <div key={s.l} className="rounded-2xl bg-white/60 backdrop-blur-xl border border-white/40 p-3 text-center shadow-sm">
               <p className="font-black text-base" style={{ color: primary }}>{s.v}</p>
               <p className="text-[11px] text-muted-foreground mt-1">{s.l}</p>
             </div>
@@ -277,7 +277,7 @@ export default async function TenantLandingPage({ params }) {
         </div>
 
         {biz.description && (
-          <section className="rounded-2xl border border-border bg-white p-5 shadow-sm">
+          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl p-5 shadow-lg shadow-sm">
             <h2 className="font-black text-base mb-2 flex items-center gap-2">
               <span className="size-6 rounded-lg flex items-center justify-center text-white text-xs" style={{ backgroundColor: primary }}>ℹ</span>
               درباره ما
@@ -298,7 +298,7 @@ export default async function TenantLandingPage({ params }) {
               const isVideo = src.endsWith('.mp4') || src.endsWith('.webm') || src.includes('/video') || src.match(/\.(mp4|webm)$/i);
               const isUpload = src.startsWith('/uploads/') || src.startsWith('/api/files/');
               return (
-                <div key={src + i} className={`relative overflow-hidden rounded-2xl border border-border bg-slate-100 ${i === 0 ? 'col-span-2 aspect-[21/9]' : 'aspect-[4/3]'}`}>
+                <div key={src + i} className={`relative overflow-hidden rounded-2xl border border-white/40 bg-white/40 backdrop-blur-xl ${i === 0 ? 'col-span-2 aspect-[21/9]' : 'aspect-[4/3]'}`}>
                   {isVideo ? (
                     <video src={src} className="absolute inset-0 w-full h-full object-cover" controls muted loop playsInline />
                   ) : isUpload ? (
@@ -321,7 +321,7 @@ export default async function TenantLandingPage({ params }) {
               {biz.services.map((s) => (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between rounded-2xl border border-border bg-white p-4 shadow-sm hover:border-teal-200 transition-colors group"
+                  className="flex items-center justify-between rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl p-4 shadow-lg shadow-sm hover:border-teal-200 transition-colors group"
                 >
                   <div>
                     <h3 className="font-bold text-[14px] group-hover:text-primary transition-colors">{s.name}</h3>
@@ -354,7 +354,7 @@ export default async function TenantLandingPage({ params }) {
               {biz.staff.map((st, idx) => (
                 <div
                   key={st.id}
-                  className="rounded-2xl border border-border bg-white p-4 text-center shadow-sm hover:shadow-md transition-shadow group"
+                  className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl p-4 shadow-lg text-center shadow-sm hover:shadow-md transition-shadow group"
                 >
                   <div className="relative mx-auto size-16 overflow-hidden rounded-full ring-2 ring-teal-100 bg-teal-50 group-hover:ring-primary/30 transition-all">
                     <Image
@@ -388,7 +388,7 @@ export default async function TenantLandingPage({ params }) {
             <h2 className="font-black text-[15px] mb-3 flex items-center gap-2">
               <span>📍</span> آدرس و نقشه
             </h2>
-            <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
+            <div className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-xl overflow-hidden shadow-lg shadow-sm">
               <div className="p-4 border-b border-border">
                 <p className="text-[13px] font-bold text-foreground">
                   {[biz.address, biz.city].filter(Boolean).join('، ')}

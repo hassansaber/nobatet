@@ -1,4 +1,4 @@
-import { Vazirmatn, Inter } from 'next/font/google';
+import { Vazirmatn, Inter, Lalezar } from 'next/font/google';
 import { ServiceWorkerRegister } from '@/components/pwa/ServiceWorkerRegister';
 import './globals.css';
 
@@ -14,6 +14,14 @@ const inter = Inter({
   variable: '--font-inter',
   display: 'swap',
   preload: false,
+});
+
+const lalezar = Lalezar({
+  subsets: ['arabic', 'latin'],
+  weight: '400',
+  variable: '--font-lalezar',
+  display: 'swap',
+  preload: true,
 });
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://nobatet.com';
@@ -168,7 +176,7 @@ const jsonLdOrganization = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${inter.variable} h-full scroll-smooth`}>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} ${inter.variable} ${lalezar.variable} h-full scroll-smooth`}>
       <head>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebsite) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrganization) }} />

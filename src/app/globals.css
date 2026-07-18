@@ -1,8 +1,7 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Vazirmatn:wght@400;500;700;900&display=swap');
 
 :root {
-  /* UI/UX Pro Max - Nobatet Design System - Soft UI Evolution */
+  /* UI/UX Pro Max - Nobatet Design System - Soft UI Evolution + Lalezar */
   --background: #F0F9FF;
   --foreground: #0F172A;
   --primary: #0284C7;
@@ -58,8 +57,9 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-ring: var(--ring);
-  --font-sans: Inter, Vazirmatn, ui-sans-serif, system-ui, sans-serif;
-  --font-heading: Inter, Vazirmatn, sans-serif;
+  --font-sans: var(--font-vazirmatn), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-lalezar), var(--font-vazirmatn), var(--font-inter), sans-serif;
+  --font-lalezar: var(--font-lalezar), var(--font-vazirmatn), sans-serif;
   --radius-lg: var(--radius);
 }
 
