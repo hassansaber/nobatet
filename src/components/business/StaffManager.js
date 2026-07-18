@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { cn } from '@/lib/utils';
+import { Image as ImageIcon, Camera } from 'lucide-react';
 
 export function StaffManager() {
   const [staff, setStaff] = useState([]);
@@ -112,7 +113,10 @@ export function StaffManager() {
                       <div className="flex gap-2"><Button size="sm" onClick={()=>saveAvatar(m.id)} loading={saving}>ذخیره تصویر</Button><Button size="sm" variant="secondary" onClick={()=>{setEditingId(null); setEditAvatar('');}}>لغو</Button></div>
                     </div>
                   ) : (
-                    <button onClick={()=>{setEditingId(m.id); setEditAvatar(m.avatarUrl || m.userAvatarUrl || '');}} className="mt-2 text-[11px] text-primary font-bold hover:underline">🖼️ تغییر تصویر با آپلود</button>
+                    <button onClick={()=>{setEditingId(m.id); setEditAvatar(m.avatarUrl || m.userAvatarUrl || '');}} className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary font-bold hover:underline cursor-pointer">
+                      <ImageIcon className="size-3.5" />
+                      تغییر تصویر با آپلود
+                    </button>
                   )}
                 </div>
               </div>

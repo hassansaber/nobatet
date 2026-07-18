@@ -1,10 +1,30 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // برای wildcard subdomain روی Liara / reverse proxy
   poweredByHeader: false,
-  // تصاویر آپلودشده (رسید کارت‌به‌کارت، لوگو) — بعداً دامنه storage اضافه می‌شود
   images: {
-    remotePatterns: [],
+    unoptimized: false,
+    remotePatterns: [
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
+    ],
+  },
+  async headers() {
+    return [
+      {
+        source: '/api/files/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
+      {
+        source: '/uploads/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+        ],
+      },
+    ];
   },
 };
 

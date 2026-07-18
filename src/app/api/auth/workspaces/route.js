@@ -6,7 +6,7 @@ export async function GET(request) {
     const session = await getSession();
     const origin = request?.headers?.get('origin') || '';
     const headers = {};
-    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com'))) {
+    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
       headers['Access-Control-Allow-Origin'] = origin;
       headers['Access-Control-Allow-Credentials'] = 'true';
     }
@@ -15,7 +15,6 @@ export async function GET(request) {
 
     const dashboards = [];
 
-    // global roles
     if (session.globalRoles?.includes('super_admin')) {
       dashboards.push({
         key: 'global-super_admin',
@@ -26,7 +25,7 @@ export async function GET(request) {
         desc: 'مدیریت کل پلتفرم، بیزنس‌ها، پلن‌ها، ویزیتورها',
         href: '/admin',
         redirectTo: '/admin',
-        icon: '👑',
+        icon: 'crown', // lucide key
         color: '#111827',
       });
     }
@@ -40,12 +39,11 @@ export async function GET(request) {
         desc: 'لینک اختصاصی، کمیسیون، بیزنس‌های جذب‌شده',
         href: '/visitor',
         redirectTo: '/visitor',
-        icon: '🤝',
+        icon: 'handshake',
         color: '#7c3aed',
       });
     }
 
-    // business memberships
     (session.memberships || []).forEach((m) => {
       const isOwner = ['owner', 'manager'].includes(m.role);
       dashboards.push({
@@ -59,12 +57,11 @@ export async function GET(request) {
         redirectTo: isOwner ? '/business' : '/staff',
         businessId: m.businessId,
         businessSlug: m.businessSlug,
-        icon: isOwner ? '🏢' : '💼',
+        icon: isOwner ? 'building' : 'briefcase',
         color: isOwner ? '#0284C7' : '#2563eb',
       });
     });
 
-    // اگر هیچ‌کدام نبود → مشتری
     if (dashboards.length === 0) {
       dashboards.push({
         key: 'customer',
@@ -75,7 +72,7 @@ export async function GET(request) {
         desc: 'نوبت‌های من، تاریخچه، علاقه‌مندی‌ها',
         href: '/me',
         redirectTo: '/me',
-        icon: '🙋',
+        icon: 'user',
         color: '#0284C7',
       });
     }
@@ -97,7 +94,7 @@ export async function GET(request) {
     console.error('[workspaces]', err);
     const origin = request?.headers?.get('origin') || '';
     const headers = {};
-    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com'))) {
+    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
       headers['Access-Control-Allow-Origin'] = origin;
       headers['Access-Control-Allow-Credentials'] = 'true';
     }
@@ -108,7 +105,7 @@ export async function GET(request) {
 export async function OPTIONS(request) {
   const origin = request.headers.get('origin') || '';
   const headers = {};
-  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com'))) {
+  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Credentials'] = 'true';
     headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';

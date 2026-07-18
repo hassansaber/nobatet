@@ -21,12 +21,11 @@ function getCookieDomain() {
     const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'localhost:3001';
     const host = base.split(':')[0].toLowerCase(); // localhost or nobatet.com
     if (!host || host === 'localhost' || host === '127.0.0.1') {
-      // برای localhost: مقدار localhost باعث می‌شود کوکی برای *.localhost هم فرستاده شود در کروم جدید
-      // برخی مرورگرها .localhost را نمی‌پذیرند، پس بدون نقطه
+      // در محیط لوکال، تلاش می‌کنیم Domain=localhost ست کنیم تا *.localhost هم کوکی را بگیرد (کروم جدید ساپورت می‌کند)
+      // اگر مرورگر قبول نکرد، fallback بدون Domain استفاده می‌شود و سپس SSO sync کوکی را روی سابدامین ست می‌کند
       return 'localhost';
     }
-    // برای پروداکشن: اگر دامنه خودش نقطه ندارد، نقطه اضافه کن تا ساب‌دامین‌ها را پوشش دهد
-    // مثال: nobatet.com → .nobatet.com
+    // برای پروداکشن: .nobatet.com تا ساب‌دامین‌ها پوشش داده شوند
     if (host.startsWith('.')) return host;
     return `.${host}`;
   } catch {
@@ -34,22 +33,37 @@ function getCookieDomain() {
   }
 }
 
+function isLocalHostDomain() {
+  const d = getCookieDomain();
+  return d === 'localhost' || d === '127.0.0.1';
+}
+
 function getCookieOptions(maxAgeSeconds) {
   const domain = getCookieDomain();
   const isProd = process.env.NODE_ENV === 'production';
+  const isLocal = isLocalHostDomain();
+
+  // برای localhost ما نیاز به SameSite=None + Secure داریم تا کوکی در fetch کراس‌سایت (business.localhost → localhost) فرستاده شود
+  // localhost به عنوان Secure context حساب می‌شود، پس Secure حتی روی http قابل قبول است (کروم)
+  // در پروداکشن SameSite=Lax کافی است چون سابدامین‌ها SameSite محسوب می‌شوند (eTLD+1 یکی است)
   const opts = {
     httpOnly: true,
-    secure: isProd,
-    sameSite: 'lax',
+    secure: isLocal ? true : isProd, // localhost → secure true برای اجازه SameSite=None
+    sameSite: isLocal ? 'none' : 'lax',
     path: '/',
     maxAge: maxAgeSeconds,
   };
-  if (domain && domain !== 'localhost') {
-    opts.domain = domain;
-  } else if (domain === 'localhost' && isProd === false) {
+
+  if (domain) {
+    // برای پروداکشن حتما Domain ست می‌کنیم
+    // برای localhost هم تلاش می‌کنیم ست کنیم، اگر مرورگر قبول نکرد در createSession fallback اجرا می‌شود
     opts.domain = domain;
   }
   return opts;
+}
+
+export function getCookieDomainForClient() {
+  return getCookieDomain();
 }
 
 // Lazy db import to avoid circular

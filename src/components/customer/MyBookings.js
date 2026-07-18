@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatRial } from '@/lib/utils';
 import { DonutChart, BarChart, LineChart } from '@/components/ui/Charts';
+import { Lightbulb } from 'lucide-react';
 
 export function MyBookings({ mode = 'upcoming' }) {
   const [upcoming, setUpcoming] = useState([]);
@@ -94,8 +95,9 @@ export function MyBookings({ mode = 'upcoming' }) {
       </div>
 
       <Card className="bg-slate-900 text-white border-slate-900">
-        <CardContent className="py-4 text-xs leading-6">
-          💡 نمودار وفاداری: هرچه بیشتر بیایید امتیاز باشگاه بیشتر می‌شود. از تب “تاریخچه” نمودارهای حرفه‌ای را ببینید.
+        <CardContent className="py-4 text-xs leading-6 flex items-start gap-2">
+          <Lightbulb className="size-4 text-amber-300 shrink-0 mt-0.5" />
+          <span>نمودار وفاداری: هرچه بیشتر بیایید امتیاز باشگاه بیشتر می‌شود. از تب “تاریخچه” نمودارهای حرفه‌ای را ببینید.</span>
         </CardContent>
       </Card>
     </div>

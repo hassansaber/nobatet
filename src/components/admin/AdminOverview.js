@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatRial } from '@/lib/utils';
 import { BarChart, DonutChart, LineChart, StatCard } from '@/components/ui/Charts';
+import { MessageCircle, Pin, BarChart3 } from 'lucide-react';
 
 export function AdminOverview() {
   const [data, setData] = useState(null);
@@ -92,7 +93,7 @@ export function AdminOverview() {
                 <div className="min-w-0 flex-1">
                   <p className="font-bold truncate">{b.name} <span className="text-[10px] font-normal bg-slate-100 px-1.5 py-0.5 rounded-full">{b.slug}</span></p>
                   <p className="text-[11px] text-muted-foreground truncate">{b.ownerName || b.ownerPhone} • {b.city || ''}</p>
-                  <p className="text-[10px] text-teal-700 mt-0.5">💬 {b.smsCount || b.smsUsed || 0} پیامک مصرفی • پلن: {b.subscription?.planName || b.planName || '—'}</p>
+                  <p className="text-[10px] text-teal-700 mt-0.5 flex items-center gap-1"><MessageCircle className="size-3" /> {b.smsCount || b.smsUsed || 0} پیامک مصرفی • پلن: {b.subscription?.planName || b.planName || '—'}</p>
                 </div>
                 <span className="text-[11px] text-muted-foreground shrink-0">{new Date(b.createdAt).toLocaleDateString('fa-IR')}</span>
               </div>
@@ -116,9 +117,9 @@ export function AdminOverview() {
       </div>
 
       <Card className="bg-slate-900 text-white border-slate-900">
-        <CardContent className="py-4 flex flex-wrap gap-3 text-xs">
-          <span>📌 تسک 7: نمایش مصرف پیامک هر بیزنس در پنل سوپرادمین و مالک</span>
-          <span className="bg-white/10 px-2.5 py-1 rounded-full">محدودیت بر اساس SMS + کارمند</span>
+        <CardContent className="py-4 flex flex-wrap gap-3 text-xs items-center">
+          <span className="inline-flex items-center gap-1"><Pin className="size-3.5" /> تسک 7: نمایش مصرف پیامک هر بیزنس در پنل سوپرادمین و مالک</span>
+          <span className="bg-white/10 px-2.5 py-1 rounded-full inline-flex items-center gap-1"><BarChart3 className="size-3" /> محدودیت بر اساس SMS + کارمند</span>
           <span className="bg-teal-500/20 text-teal-200 px-2.5 py-1 rounded-full">پلن‌ها: پایه / حرفه‌ای / سازمانی • ۱/۳/۱۲ ماهه</span>
         </CardContent>
       </Card>

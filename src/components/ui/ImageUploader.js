@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Upload, Plus, Image as ImageIcon } from 'lucide-react';
 
 export function ImageUploader({ label, value, onChange, type = 'general', accept = 'image/*,video/*', hint, preview = true }) {
   const [uploading, setUploading] = useState(false);
@@ -65,8 +66,9 @@ export function ImageUploader({ label, value, onChange, type = 'general', accept
           <div className="flex-1 w-full">
             <div className="flex gap-2 flex-wrap">
               <input ref={inputRef} type="file" accept={accept} onChange={onSelect} className="hidden" />
-              <Button type="button" size="sm" variant="secondary" loading={uploading} onClick={() => inputRef.current?.click()}>
-                {uploading ? 'در حال آپلود...' : '📁 انتخاب فایل'}
+              <Button type="button" size="sm" variant="secondary" loading={uploading} onClick={() => inputRef.current?.click()} className="gap-1.5">
+                <Upload className="size-3.5" />
+                {uploading ? 'در حال آپلود...' : 'انتخاب فایل'}
               </Button>
               {value && (
                 <Button type="button" size="sm" variant="ghost" onClick={() => onChange?.('')}>
@@ -145,7 +147,10 @@ export function GalleryUploader({ values = [], onChange, type = 'gallery' }) {
       </div>
       <div className="flex gap-2">
         <input ref={inputRef} type="file" accept="image/*,video/*" multiple onChange={(e) => { if (e.target.files?.length) handleFiles(Array.from(e.target.files)); e.target.value = ''; }} className="hidden" />
-        <Button type="button" size="sm" loading={uploading} onClick={() => inputRef.current?.click()}>➕ افزودن تصویر/ویدیو</Button>
+        <Button type="button" size="sm" loading={uploading} onClick={() => inputRef.current?.click()} className="gap-1.5">
+          <Plus className="size-3.5" />
+          افزودن تصویر/ویدیو
+        </Button>
         <span className="text-[11px] text-muted-foreground self-center">{values.length} آیتم • آپلود چندتایی + بهینه‌سازی خودکار</span>
       </div>
     </div>

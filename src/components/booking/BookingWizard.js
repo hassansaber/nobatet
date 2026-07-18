@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Scissors, User, Calendar, Clock, UserCheck, CreditCard } from 'lucide-react';
+import { Scissors, User, Calendar, Clock, UserCheck, CreditCard, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn, formatRial } from '@/lib/utils';
@@ -64,24 +64,80 @@ export function BookingWizard({ business, primaryColor = '#0284C7' }) {
     return opts.filter((o) => { if (seen.has(o.value)) return false; seen.add(o.value); return true; });
   }, []);
 
+  const hasPrefilledRef = useRef(false);
+
   const fetchUser = useCallback(async () => {
+    const mainDomain = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
     try {
       const res = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'include' });
-      if (!res.ok) { setUserLoaded(true); return; }
-      const data = await res.json();
-      if (data.ok && data.user) {
-        setSessionUser(data.user);
-        const fullName = [data.user.firstName, data.user.lastName].filter(Boolean).join(' ').trim();
-        if (fullName) setCustomerName(fullName);
-        if (data.user.phone) {
-          setCustomerPhone(data.user.phone);
-          setGuestPhone(data.user.phone);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok && data.user) {
+          setSessionUser(data.user);
+          const fullName = [data.user.firstName, data.user.lastName].filter(Boolean).join(' ').trim();
+          if (fullName) setCustomerName((prev) => prev || fullName);
+          if (data.user.phone) {
+            setCustomerPhone((prev) => prev || data.user.phone);
+            setGuestPhone((prev) => prev || data.user.phone);
+          }
+          hasPrefilledRef.current = true;
+          setUserLoaded(true);
+          return data.user;
         }
       }
+      // fallback to main domain SSO
+      try {
+        const fbRes = await fetch(`${mainDomain}/api/auth/me`, { cache: 'no-store', credentials: 'include', mode: 'cors' });
+        if (fbRes.ok) {
+          const fbData = await fbRes.json();
+          if (fbData.ok && fbData.user) {
+            setSessionUser(fbData.user);
+            const fullName = [fbData.user.firstName, fbData.user.lastName].filter(Boolean).join(' ').trim();
+            if (fullName) setCustomerName((prev) => prev || fullName);
+            if (fbData.user.phone) {
+              setCustomerPhone((prev) => prev || fbData.user.phone);
+              setGuestPhone((prev) => prev || fbData.user.phone);
+            }
+            hasPrefilledRef.current = true;
+            // sync token to this subdomain
+            try {
+              const tokenRes = await fetch(`${mainDomain}/api/auth/token`, { cache: 'no-store', credentials: 'include', mode: 'cors' });
+              if (tokenRes.ok) {
+                const tokenData = await tokenRes.json();
+                if (tokenData.ok && tokenData.token) {
+                  await fetch('/api/auth/sync', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: tokenData.token }) });
+                }
+              }
+            } catch {}
+            setUserLoaded(true);
+            return fbData.user;
+          }
+        }
+      } catch {}
     } catch {} finally { setUserLoaded(true); }
+    return null;
   }, []);
 
   useEffect(() => { fetchUser(); }, [fetchUser]);
+
+  // اگر کاربر لاگین است و به مرحله 5 می‌آید اما فیلدها خالی مانده (race condition قدیمی)، دوباره پر کن
+  useEffect(() => {
+    if (step === 5 && sessionUser && !hasPrefilledRef.current) {
+      const fullName = [sessionUser.firstName, sessionUser.lastName].filter(Boolean).join(' ').trim();
+      if (fullName && !customerName) setCustomerName(fullName);
+      if (sessionUser.phone && !customerPhone) setCustomerPhone(sessionUser.phone);
+      if (sessionUser.phone && !guestPhone) setGuestPhone(sessionUser.phone);
+    }
+  }, [step, sessionUser, customerName, customerPhone, guestPhone]);
+
+  // اگر سشن بعداً آمد (بعد از mount) فیلدها را پر کن - حتی اگر کاربر سریع خدمت را انتخاب کرده باشد
+  useEffect(() => {
+    if (sessionUser) {
+      const fullName = [sessionUser.firstName, sessionUser.lastName].filter(Boolean).join(' ').trim();
+      if (fullName && !customerName) setCustomerName(fullName);
+      if (sessionUser.phone && !customerPhone) setCustomerPhone(sessionUser.phone);
+    }
+  }, [sessionUser]);
 
   const loadSlots = useCallback(async () => {
     if (!serviceId || !date) return;
@@ -444,7 +500,7 @@ export function BookingWizard({ business, primaryColor = '#0284C7' }) {
 
                 {business.cancellationPolicy && (
                   <div className="rounded-2xl border border-white/40 bg-amber-50/50 backdrop-blur p-4 text-xs text-muted-foreground leading-6">
-                    <p className="font-black text-foreground mb-1 flex items-center gap-2">📜 قوانین لغو</p>{business.cancellationPolicy}
+                    <p className="font-black text-foreground mb-1 flex items-center gap-2"><FileText className="size-4" /> قوانین لغو</p>{business.cancellationPolicy}
                   </div>
                 )}
 

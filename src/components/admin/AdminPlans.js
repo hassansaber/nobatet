@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { formatRial } from '@/lib/utils';
+import { Lightbulb } from 'lucide-react';
 
 export function AdminPlans() {
   const [plans, setPlans] = useState([]);
@@ -103,7 +104,7 @@ export function AdminPlans() {
 
       <Card className="bg-amber-50 border-amber-200">
         <CardContent className="py-4 text-xs leading-6">
-          <p className="font-bold">💡 نکته Task 7:</p>
+          <p className="font-bold flex items-center gap-1.5"><Lightbulb className="size-4" /> نکته Task 7:</p>
           <p>پیامک‌های مصرفی از جدول sms_logs محاسبه می‌شود. در داشبورد مالک و سوپرادمین نمایش داده می‌شود و پلن بر اساس آن محدود می‌شود.</p>
         </CardContent>
       </Card>

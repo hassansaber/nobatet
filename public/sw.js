@@ -1,20 +1,16 @@
-/* نوبتت Service Worker — cache-first for shell, network-first for API */
-const CACHE = 'nobatet-v1';
+/* نوبتت Service Worker — v3 - bypass uploads & api files + new cache */
+const CACHE = 'nobatet-v3';
 const PRECACHE = [
-  '/',
-  '/demo',
-  '/login',
-  '/manifest.webmanifest',
+  '/offline.html',
   '/icon-192.png',
   '/icon-512.png',
-  '/offline.html',
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(PRECACHE))
+      .then((cache) => cache.addAll(PRECACHE).catch(()=>{}))
       .then(() => self.skipWaiting()),
   );
 });
@@ -38,17 +34,28 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Don't intercept uploads - always network only (fixes 404 after upload)
-  if (url.pathname.startsWith('/uploads/')) {
+  // Critical: Never cache uploads or api/files or favicon - always network only
+  // Fixes: upload POST 200 but GET 404 from service worker returning cached 404
+  if (
+    url.pathname.startsWith('/uploads/') ||
+    url.pathname.startsWith('/api/files/') ||
+    url.pathname.startsWith('/api/upload') ||
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/icon.png' ||
+    url.pathname === '/apple-icon.png'
+  ) {
     event.respondWith(
-      fetch(request).catch(() => {
+      fetch(request).then((res) => {
+        // Don't cache, just return
+        return res;
+      }).catch(() => {
         return new Response('File not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
       })
     );
     return;
   }
 
-  // API: network-first, fallback cache for read endpoints
+  // API: network-first, no aggressive caching - only cache bookings list slightly
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request));
     return;
@@ -64,7 +71,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: cache-first
+  // Static assets: cache-first with freshness check
   event.respondWith(cacheFirst(request));
 });
 
@@ -73,9 +80,13 @@ async function cacheFirst(request) {
   if (cached) return cached;
   try {
     const res = await fetch(request);
-    const cache = await caches.open(CACHE);
-    if (res.ok && request.url.startsWith(self.location.origin)) {
-      cache.put(request, res.clone());
+    // Only cache same-origin OK responses, not html navigations
+    if (res.ok && request.url.startsWith(self.location.origin) && !request.url.includes('/api/')) {
+      const cache = await caches.open(CACHE);
+      // Don't cache favicon if old
+      if (!request.url.endsWith('favicon.ico')) {
+        cache.put(request, res.clone());
+      }
     }
     return res;
   } catch {
