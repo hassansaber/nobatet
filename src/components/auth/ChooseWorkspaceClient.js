@@ -12,12 +12,6 @@ const ICON_MAP = {
   building: Building2,
   briefcase: Briefcase,
   user: User,
-  // legacy fallbacks
-  '👑': Crown,
-  '🤝': Handshake,
-  '🏢': Building2,
-  '💼': Briefcase,
-  '🙋': User,
 };
 
 export function ChooseWorkspaceClient() {

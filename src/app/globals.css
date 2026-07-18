@@ -22,7 +22,6 @@
   --ring: #0284C7;
   --radius: 0.75rem;
 
-  /* Spacing tokens from Master */
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
@@ -31,11 +30,11 @@
   --space-2xl: 48px;
   --space-3xl: 64px;
 
-  /* Shadows from Master */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-  --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.08);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.12);
+  --shadow-glass: 0 8px 32px rgba(2,132,199,0.12), 0 1px 2px rgba(0,0,0,0.04);
 }
 
 @theme inline {
@@ -63,19 +62,17 @@
   --radius-lg: var(--radius);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
   scroll-behavior: smooth;
-  font-size: 17px;
+  font-size: 15px; /* کاهش از 17 - حس سبک‌تر */
 }
-
 @media (min-width: 640px) {
-  html {
-    font-size: 18px;
-  }
+  html { font-size: 15.5px; }
+}
+@media (min-width: 1024px) {
+  html { font-size: 16px; } /* دسکتاپ کمی بزرگتر ولی نه خیلی */
 }
 
 body {
@@ -84,9 +81,10 @@ body {
   font-family: var(--font-sans);
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
-  font-weight: 500;
-  line-height: 1.75;
-  /* Soft UI Evolution background - subtle depth */
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 400; /* از 500 به 400 سبک‌تر */
+  line-height: 1.8;
+  letter-spacing: -0.01em;
   background-image: 
     radial-gradient(at 15% 25%, rgba(2, 132, 199, 0.06) 0px, transparent 50%),
     radial-gradient(at 85% 15%, rgba(14, 165, 233, 0.05) 0px, transparent 45%),
@@ -94,168 +92,236 @@ body {
   background-attachment: fixed;
 }
 
+/* Lalezar headings - وزن 400 چون Lalezar فقط 400 دارد و خودش بولد است */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  font-weight: 900;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
+  font-weight: 400; /* Lalezar وزن 400 ولی بصری بولد */
+  line-height: 1.25;
+  letter-spacing: -0.015em;
   color: var(--foreground);
+  text-rendering: optimizeLegibility;
 }
 
-h1 { font-size: 2.1rem; font-weight: 900; }
-h2 { font-size: 1.6rem; font-weight: 900; }
-h3 { font-size: 1.25rem; font-weight: 800; }
+h1 { 
+  font-size: 1.75rem; /* کاهش از 2.1rem - سبک‌تر */
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  h1 { font-size: 2rem; }
+}
+@media (min-width: 1024px) {
+  h1 { font-size: 2.2rem; }
+}
 
-p, li, label, span, button, input, textarea, a {
+h2 { 
+  font-size: 1.35rem; /* کاهش از 1.6 */
+  line-height: 1.3;
+}
+@media (min-width: 640px) {
+  h2 { font-size: 1.5rem; }
+}
+h3 { 
+  font-size: 1.1rem; /* کاهش از 1.25 */
+  font-weight: 400;
+}
+h4 { font-size: 1rem; font-weight: 400; }
+
+/* متن عمومی سبک‌تر */
+p, li, label, span, a {
   letter-spacing: -0.005em;
   font-family: var(--font-sans);
-  font-weight: 500;
+  font-weight: 400;
 }
+p { line-height: 1.85; font-size: 0.95rem; }
 
-/* Inputs - 16px min for mobile to avoid zoom, focus ring */
+/* ورودی‌ها */
 input[inputmode="numeric"],
 input[inputmode="tel"],
 input[type="tel"] {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
-
 input, textarea, select {
   font-family: var(--font-sans);
-  font-weight: 500;
-  font-size: 16px;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+@media (min-width: 640px) {
+  input, textarea, select { font-size: 0.875rem; }
 }
 
+/* دکمه‌ها وزن متوسط نه خیلی بولد */
 button {
   font-family: var(--font-sans);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
+  letter-spacing: -0.01em;
 }
 
-/* Glassmorphism utilities - Soft UI Evolution */
+/* لینک‌ها */
+a { font-weight: 400; }
+
+/* لیبل‌ها - کمی کوچکتر */
+label { font-size: 0.85rem; font-weight: 500; }
+
+/* Glassmorphism utilities - نسخه مات‌تر و شفاف‌تر */
 .glass {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: var(--shadow-sm), 0 1px 3px rgba(2, 132, 199, 0.06);
+  background: rgba(255, 255, 255, 0.42); /* از 0.72 به 0.42 - شفاف‌تر و مات */
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: var(--shadow-glass);
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(24px) saturate(1.5);
-  -webkit-backdrop-filter: blur(24px) saturate(1.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  box-shadow: var(--shadow-md), 0 1px 2px rgba(2, 132, 199, 0.05);
+  background: rgba(255, 255, 255, 0.58); /* از 0.82 به 0.58 - شیشه‌ای مات */
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: var(--shadow-glass), 0 1px 1px rgba(2, 132, 199, 0.04);
+}
+
+.glass-ultra {
+  background: rgba(255, 255, 255, 0.32);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(2, 132, 199, 0.10);
 }
 
 .glass-blue {
-  background: linear-gradient(135deg, rgba(2,132,199,0.08), rgba(255,255,255,0.65));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(2,132,199,0.12);
+  background: linear-gradient(135deg, rgba(2,132,199,0.06), rgba(255,255,255,0.38));
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(2,132,199,0.10);
+  box-shadow: var(--shadow-glass);
 }
 
 .glass-green {
-  background: linear-gradient(135deg, rgba(5,150,105,0.07), rgba(255,255,255,0.6));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(5,150,105,0.12);
+  background: linear-gradient(135deg, rgba(5,150,105,0.05), rgba(255,255,255,0.35));
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(5,150,105,0.08);
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.78);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(15, 23, 42, 0.68); /* کمی شفاف‌تر */
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 
-/* Buttons - Master spec */
+/* Header glass - برای هر دو هدر */
+.glass-header {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(2,132,199,0.06);
+}
+.glass-header-strong {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04);
+}
+
+/* کارت‌های کسب‌وکار - شیشه‌ای مات */
+.glass-card {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(2,132,199,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  transition: all 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.58);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 30px rgba(2,132,199,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
+}
+
+/* Buttons */
 .btn-primary {
   background: var(--accent);
   color: white;
-  padding: 12px 24px;
+  padding: 10px 20px; /* کمی کوچکتر */
   border-radius: 12px;
-  font-weight: 700;
+  font-weight: 500;
+  font-size: 0.9rem;
   transition: all 200ms ease;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(5,150,105,0.25);
+  box-shadow: 0 2px 8px rgba(5,150,105,0.2);
 }
 .btn-primary:hover {
   opacity: 0.92;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(5,150,105,0.3);
+  box-shadow: 0 4px 14px rgba(5,150,105,0.25);
 }
-
 .btn-secondary {
   background: transparent;
   color: var(--primary);
-  border: 2px solid var(--primary);
-  padding: 12px 24px;
+  border: 1.5px solid var(--primary);
+  padding: 10px 20px;
   border-radius: 12px;
-  font-weight: 700;
+  font-weight: 500;
+  font-size: 0.9rem;
   transition: all 200ms ease;
   cursor: pointer;
 }
-.btn-secondary:hover {
-  background: rgba(2,132,199,0.06);
-}
+.btn-secondary:hover { background: rgba(2,132,199,0.06); }
 
-/* Cards - Master spec Soft UI Evolution */
+/* Cards soft - هم گلس مورفیسم */
 .card-soft {
-  background: rgba(255,255,255,0.8);
-  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.4);
   border-radius: 16px;
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  box-shadow: var(--shadow-glass);
   transition: all 200ms ease;
 }
 .card-soft:hover {
-  box-shadow: var(--shadow-md);
+  background: rgba(255,255,255,0.65);
+  box-shadow: 0 8px 28px rgba(2,132,199,0.12);
   transform: translateY(-2px);
-  border-color: rgba(2,132,199,0.15);
+  border-color: rgba(2,132,199,0.12);
 }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
+/* Scrollbar - باریک‌تر */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
-/* Focus - WCAG AA */
+/* Focus */
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px rgba(2,132,199,0.15);
 }
 
-/* Animations - 150-300ms */
+/* Animations */
 @keyframes spin { to { transform: rotate(360deg); } }
 .animate-spin-slow { animation: spin 0.8s linear infinite; }
-
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
+  50% { transform: translateY(-5px); }
 }
 .animate-float { animation: float 4s ease-in-out infinite; }
-
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 .animate-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -264,9 +330,27 @@ button {
     scroll-behavior: auto !important;
   }
 }
-
 @supports (padding: env(safe-area-inset-bottom)) {
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* Lalezar specific - عناوین با لاله‌زار بولد بصری */
+.font-lalezar { font-family: var(--font-lalezar); font-weight: 400; }
+.font-heading { font-family: var(--font-heading); font-weight: 400; }
+
+/* هدرها با لاله‌زار برای لوگو/عنوان */
+.header-title {
+  font-family: var(--font-lalezar);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+/* هیرو - متن سفید با سایه */
+.hero-white {
+  color: white;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.2);
+}
+.hero-white-sub {
+  color: rgba(255,255,255,0.92);
+  text-shadow: 0 1px 8px rgba(0,0,0,0.2);
 }
