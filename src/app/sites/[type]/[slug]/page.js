@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { getPublicBusinessLanding } from '@/services/business-service';
 import { getVisitorBySlug } from '@/services/saas-service';
 import { BookingWizard } from '@/components/booking/BookingWizard';
+import { TenantHeader } from '@/components/layout/TenantHeader';
 import { formatRial } from '@/lib/utils';
 
 export async function generateMetadata({ params }) {
@@ -163,7 +164,7 @@ export default async function TenantLandingPage({ params }) {
   const biz = await getPublicBusinessLanding(slug);
   if (!biz) notFound();
 
-  const primary = biz.theme?.primary || '#0d9488';
+  const primary = biz.theme?.primary || '#0284C7';
   const cover = biz.bannerUrl || '/images/industry-salon.jpg';
   const logo = biz.logoUrl || '/logo-icon.png';
   const gallery = biz.galleryUrls?.length ? biz.galleryUrls : [
@@ -182,6 +183,7 @@ export default async function TenantLandingPage({ params }) {
 
   return (
     <div className="min-h-dvh bg-slate-50 pb-28">
+      <TenantHeader businessName={biz.name} businessLogo={logo} primaryColor={primary} slug={slug} />
       {/* Cover - supports video banner */}
       <div className="relative h-[300px] sm:h-[420px] w-full overflow-hidden bg-slate-900">
         {isCoverVideo ? (

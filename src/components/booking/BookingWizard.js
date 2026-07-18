@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { cn, formatRial } from '@/lib/utils';
 import { formatTehranDateTime } from '@/lib/datetime';
 
-export function BookingWizard({ business, primaryColor = '#0d9488' }) {
+export function BookingWizard({ business, primaryColor = '#0284C7' }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [serviceId, setServiceId] = useState('');

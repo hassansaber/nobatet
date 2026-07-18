@@ -47,7 +47,7 @@ export function ReportsDashboard() {
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label:'درآمد', value:formatRial(report.summary.revenue), hint:'تومان • تأیید/انجام', color:'#0d9488', trend:`+${Math.round(report.summary.revenue/10000)}% نسبت به قبل` },
+              { label:'درآمد', value:formatRial(report.summary.revenue), hint:'تومان • تأیید/انجام', color:'#0284C7', trend:`+${Math.round(report.summary.revenue/10000)}% نسبت به قبل` },
               { label:'رزروها', value:String(report.summary.totalBookings), hint:`${report.summary.confirmed} قطعی • ${report.summary.pending} انتظار`, color:'#2563eb' },
               { label:'نرخ لغو', value:`${report.summary.cancelRate}%`, hint:`${report.summary.cancelled} لغو از کل`, color: report.summary.cancelRate>20?'#ef4444':'#16a34a' },
               { label:'میانگین فاکتور', value:formatRial(report.summary.avgTicket), hint:'تومان به ازای هر رزرو', color:'#7c3aed' },
@@ -60,14 +60,14 @@ export function ReportsDashboard() {
             <Card className="lg:col-span-2">
               <CardHeader><CardTitle className="text-sm">روند درآمد روزانه (نمودار خطی)</CardTitle></CardHeader>
               <CardContent>
-                <LineChart data={(report.dailyRevenue||[]).map((d)=>({label:new Date(d.date).toLocaleDateString('fa-IR',{month:'short',day:'numeric'}), value:d.revenue}))} color="#0d9488" height={140} />
+                <LineChart data={(report.dailyRevenue||[]).map((d)=>({label:new Date(d.date).toLocaleDateString('fa-IR',{month:'short',day:'numeric'}), value:d.revenue}))} color="#0284C7" height={140} />
                 <p className="text-[11px] text-muted-foreground mt-2 text-center">از {new Date(report.from).toLocaleDateString('fa-IR')} تا {new Date(report.to).toLocaleDateString('fa-IR')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader><CardTitle className="text-sm">وضعیت رزروها (دونات)</CardTitle></CardHeader>
               <CardContent><DonutChart data={[
-                {label:'تأیید', value:report.summary.confirmed, color:'#0d9488'},
+                {label:'تأیید', value:report.summary.confirmed, color:'#0284C7'},
                 {label:'انجام', value:report.summary.completed, color:'#2563eb'},
                 {label:'لغو', value:report.summary.cancelled, color:'#ef4444'},
                 {label:'نیامد', value:report.summary.noShow, color:'#f59e0b'},
@@ -79,7 +79,7 @@ export function ReportsDashboard() {
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader><CardTitle className="text-sm">پرکارترین خدمات (میله‌ای)</CardTitle></CardHeader>
-              <CardContent>{report.topServices.length===0 ? <p className="text-sm text-muted-foreground">داده‌ای نیست</p> : <BarChart data={report.topServices.map((s)=>({label:s.name, value:s.count, color:'#0d9488'}))} />}</CardContent>
+              <CardContent>{report.topServices.length===0 ? <p className="text-sm text-muted-foreground">داده‌ای نیست</p> : <BarChart data={report.topServices.map((s)=>({label:s.name, value:s.count, color:'#0284C7'}))} />}</CardContent>
             </Card>
             <Card>
               <CardHeader><CardTitle className="text-sm">پرکارترین کارمندان (میله‌ای)</CardTitle></CardHeader>

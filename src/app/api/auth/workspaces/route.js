@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    const origin = request?.headers?.get('origin') || '';
+    const headers = {};
+    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com'))) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      headers['Access-Control-Allow-Credentials'] = 'true';
+    }
+
+    if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers });
 
     const dashboards = [];
 
@@ -53,7 +60,7 @@ export async function GET() {
         businessId: m.businessId,
         businessSlug: m.businessSlug,
         icon: isOwner ? '🏢' : '💼',
-        color: isOwner ? '#0d9488' : '#2563eb',
+        color: isOwner ? '#0284C7' : '#2563eb',
       });
     });
 
@@ -69,7 +76,7 @@ export async function GET() {
         href: '/me',
         redirectTo: '/me',
         icon: '🙋',
-        color: '#0d9488',
+        color: '#0284C7',
       });
     }
 
@@ -85,9 +92,27 @@ export async function GET() {
       },
       dashboards,
       total: dashboards.length,
-    });
+    }, { headers });
   } catch (err) {
     console.error('[workspaces]', err);
-    return NextResponse.json({ ok: false, error: 'خطای سرور' }, { status: 500 });
+    const origin = request?.headers?.get('origin') || '';
+    const headers = {};
+    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com'))) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      headers['Access-Control-Allow-Credentials'] = 'true';
+    }
+    return NextResponse.json({ ok: false, error: 'خطای سرور' }, { status: 500, headers });
   }
+}
+
+export async function OPTIONS(request) {
+  const origin = request.headers.get('origin') || '';
+  const headers = {};
+  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com'))) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
+    headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+  }
+  return new NextResponse(null, { status: 204, headers });
 }

@@ -35,7 +35,7 @@ export function MyBookings({ mode = 'upcoming' }) {
   const list = mode === 'history' ? history : upcoming;
   const totalSpent = [...upcoming, ...history].filter((b)=>['confirmed','completed'].includes(b.status)).reduce((s,b)=>s+(b.totalAmount||0),0);
   const statusChart = [
-    { label:'تأیید', value: [...upcoming,...history].filter((b)=>b.status==='confirmed').length, color:'#0d9488' },
+    { label:'تأیید', value: [...upcoming,...history].filter((b)=>b.status==='confirmed').length, color:'#0284C7' },
     { label:'انجام', value: history.filter((b)=>b.status==='completed').length, color:'#2563eb' },
     { label:'لغو', value: [...upcoming,...history].filter((b)=>b.status==='cancelled').length, color:'#ef4444' },
   ];

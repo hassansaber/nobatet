@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { HomeWorkspaceCTA } from '@/components/home/HomeWorkspaceCTA';
+import { BusinessesSection } from '@/components/home/BusinessesSection';
 import { FadeIn, Stagger, StaggerItem, HoverCard, ScaleIn } from '@/components/motion/FadeIn';
 import { Globe, Smartphone, CalendarDays, BarChart3, Users, TabletSmartphone, Check, Star, QrCode, Shield, Clock, Sparkles } from 'lucide-react';
 
@@ -375,6 +376,8 @@ export default function HomePage() {
             </Stagger>
           </div>
         </section>
+
+        <BusinessesSection />
 
         {/* Customer flow */}
         <section className="py-16 sm:py-20 bg-white">

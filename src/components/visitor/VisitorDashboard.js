@@ -62,7 +62,7 @@ export function VisitorDashboard({ tab = 'home' }) {
 
   if (tab === 'commissions') {
     const byStatus = [
-      { label: 'پرداخت شده', value: stats.commissions.filter((c)=>['paid','approved'].includes(c.status)).length, color:'#0d9488' },
+      { label: 'پرداخت شده', value: stats.commissions.filter((c)=>['paid','approved'].includes(c.status)).length, color:'#0284C7' },
       { label: 'در انتظار', value: stats.commissions.filter((c)=>c.status==='pending').length, color:'#f59e0b' },
     ];
     return (
@@ -105,8 +105,8 @@ export function VisitorDashboard({ tab = 'home' }) {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <Card><CardHeader><CardTitle className="text-sm">رشد جذب (۴ هفته اخیر)</CardTitle></CardHeader><CardContent><LineChart data={monthlyGrowth} color="#0d9488" height={100} /></CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-sm">وضعیت بیزنس‌ها</CardTitle></CardHeader><CardContent><DonutChart data={[{label:'فعال',value:stats.activeBusinesses,color:'#0d9488'},{label:'غیرفعال/منقضی',value:Math.max(0,stats.businessCount-stats.activeBusinesses),color:'#e2e8f0'}]} size={120} /></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-sm">رشد جذب (۴ هفته اخیر)</CardTitle></CardHeader><CardContent><LineChart data={monthlyGrowth} color="#0284C7" height={100} /></CardContent></Card>
+        <Card><CardHeader><CardTitle className="text-sm">وضعیت بیزنس‌ها</CardTitle></CardHeader><CardContent><DonutChart data={[{label:'فعال',value:stats.activeBusinesses,color:'#0284C7'},{label:'غیرفعال/منقضی',value:Math.max(0,stats.businessCount-stats.activeBusinesses),color:'#e2e8f0'}]} size={120} /></CardContent></Card>
       </div>
 
       <Card>

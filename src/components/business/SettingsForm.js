@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { ImageUploader, GalleryUploader } from '@/components/ui/ImageUploader';
 
 const THEMES = [
-  { primary: '#0d9488', secondary: '#0f766e', accent: '#f59e0b', name: 'فیروزه‌ای' },
+  { primary: '#0284C7', secondary: '#0EA5E9', accent: '#059669', name: 'آبی آسمانی (پیشنهادی)' },
+  { primary: '#0d9488', secondary: '#0f766e', accent: '#f59e0b', name: 'فیروزه‌ای کلاسیک' },
   { primary: '#7c3aed', secondary: '#5b21b6', accent: '#f472b6', name: 'بنفش' },
   { primary: '#dc2626', secondary: '#991b1b', accent: '#fbbf24', name: 'قرمز' },
-  { primary: '#2563eb', secondary: '#1d4ed8', accent: '#34d399', name: 'آبی' },
+  { primary: '#2563eb', secondary: '#1d4ed8', accent: '#34d399', name: 'آبی پررنگ' },
   { primary: '#ea580c', secondary: '#c2410c', accent: '#0ea5e9', name: 'نارنجی' },
-  { primary: '#111827', secondary: '#000', accent: '#0d9488', name: 'مشکی مدرن' },
+  { primary: '#111827', secondary: '#000', accent: '#0284C7', name: 'مشکی مدرن' },
 ];
 
 export function SettingsForm() {

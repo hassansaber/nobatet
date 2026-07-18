@@ -19,24 +19,20 @@ export function ImageUploader({ label, value, onChange, type = 'general', accept
       form.append('file', file);
       form.append('type', type);
 
-      console.log('[ImageUploader] uploading', file.name, file.type, file.size, 'as', type);
       const res = await fetch('/api/upload', { method: 'POST', body: form, credentials: 'include' });
-      console.log('[ImageUploader] response status', res.status);
       const text = await res.text();
       let data;
       try { data = JSON.parse(text); } catch { data = { ok: false, error: `پاسخ نامعتبر: ${text.slice(0,200)}`, status: res.status }; }
-      console.log('[ImageUploader] data', data);
       if (!data.ok) {
-        setError(`خطا ${res.status}: ${data.error || 'آپلود ناموفق'} - Network: تب Network → /api/upload → Response را چک کن`);
+        setError(`خطا ${res.status}: ${data.error || 'آپلود ناموفق'}`);
         setProgress('');
         return;
       }
       onChange?.(data.url);
-      setProgress(`✓ آپلود شد: ${data.url} (${Math.round(data.size/1024)}KB) - پوشه: ${type}`);
+      setProgress(`✓ آپلود شد (${Math.round(data.size/1024)}KB)`);
       setTimeout(() => setProgress(''), 4000);
     } catch (e) {
-      console.error('[ImageUploader] exception', e);
-      setError('خطای شبکه: ' + (e?.message || '') + ' - کنسول مرورگر (F12) و تب Network را چک کن');
+      setError('خطای شبکه: ' + (e?.message || ''));
       setProgress('');
     } finally {
       setUploading(false);

@@ -9,7 +9,7 @@ export default function manifest() {
     display: 'standalone',
     orientation: 'portrait-primary',
     background_color: '#f8fafc',
-    theme_color: '#0d9488',
+    theme_color: '#0284C7',
     lang: 'fa',
     dir: 'rtl',
     categories: ['business', 'productivity'],

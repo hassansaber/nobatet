@@ -47,11 +47,11 @@ export const businesses = pgTable(
     city: varchar('city', { length: 80 }),
     latitude: varchar('latitude', { length: 32 }),
     longitude: varchar('longitude', { length: 32 }),
-    /** پالت رنگ و تنظیمات ظاهری لندینگ */
+    /** پالت رنگ و تنظیمات ظاهری لندینگ - Soft UI Evolution از دیزاین سیستم */
     theme: jsonb('theme').$type().default({
-      primary: '#0d9488',
-      secondary: '#0f766e',
-      accent: '#f59e0b',
+      primary: '#0284C7',
+      secondary: '#0EA5E9',
+      accent: '#059669',
     }),
     /** فیچرهای فعال لندینگ: gallery, reviews, about, ... */
     landingFeatures: jsonb('landing_features').$type().default({

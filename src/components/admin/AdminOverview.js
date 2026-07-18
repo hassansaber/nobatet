@@ -30,7 +30,7 @@ export function AdminOverview() {
   if (!data) return <p className="text-sm text-muted-foreground">در حال بارگذاری نمای کلی...</p>;
 
   const cards = [
-    { l: 'بیزنس‌ها', v: data.counts.businesses, hint: 'کل کسب‌وکارهای ثبت‌شده', color: '#0d9488' },
+    { l: 'بیزنس‌ها', v: data.counts.businesses, hint: 'کل کسب‌وکارهای ثبت‌شده', color: '#0284C7' },
     { l: 'کاربران', v: data.counts.users, hint: 'شامل مشتری و کارمند', color: '#2563eb' },
     { l: 'ویزیتورها', v: data.counts.visitors, hint: 'بازاریاب فعال', color: '#7c3aed' },
     { l: 'رزروها', v: data.counts.bookings, hint: 'کل تاریخچه', color: '#ea580c' },
@@ -45,7 +45,7 @@ export function AdminOverview() {
   businessGrowth.reverse().forEach((d) => { cum += d.value; growthData.push({ label: d.label, value: cum }); });
 
   const statusDonut = [
-    { label: 'فعال/آزمایشی', value: data.counts.activeSubscriptions, color: '#0d9488' },
+    { label: 'فعال/آزمایشی', value: data.counts.activeSubscriptions, color: '#0284C7' },
     { label: 'غیرفعال', value: Math.max(0, (data.counts.businesses||0) - (data.counts.activeSubscriptions||0)), color: '#e2e8f0' },
   ];
 
@@ -75,7 +75,7 @@ export function AdminOverview() {
       <div className="grid lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle className="text-sm">رشد کسب‌وکارها (۷ ثبت اخیر → تجمعی)</CardTitle></CardHeader>
-          <CardContent><LineChart data={growthData} color="#0d9488" height={120} /></CardContent>
+          <CardContent><LineChart data={growthData} color="#0284C7" height={120} /></CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle className="text-sm">وضعیت اشتراک‌ها</CardTitle></CardHeader>
@@ -109,7 +109,7 @@ export function AdminOverview() {
               { label: 'خرداد', value: Math.round((data.subscriptionRevenue||0)*0.15) },
               { label: 'تیر', value: Math.round((data.subscriptionRevenue||0)*0.25) },
               { label: 'مرداد', value: Math.round((data.subscriptionRevenue||0)*0.30) },
-            ]} color="#0d9488" />
+            ]} color="#0284C7" />
             <p className="text-[11px] text-muted-foreground mt-3">درآمد کل: {formatRial(data.subscriptionRevenue)} تومان • میانگین هر بیزنس: {formatRial(Math.round((data.subscriptionRevenue||0)/Math.max(1,data.counts.businesses)))} </p>
           </CardContent>
         </Card>

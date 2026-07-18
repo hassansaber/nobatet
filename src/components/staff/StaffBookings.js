@@ -39,7 +39,7 @@ export function StaffBookings({ todayOnly = false }) {
   }
 
   const byStatus = [
-    { label: 'تأیید', value: bookings.filter((b)=>b.status==='confirmed').length, color:'#0d9488' },
+    { label: 'تأیید', value: bookings.filter((b)=>b.status==='confirmed').length, color:'#0284C7' },
     { label: 'انجام', value: bookings.filter((b)=>b.status==='completed').length, color:'#2563eb' },
     { label: 'نیامد', value: bookings.filter((b)=>b.status==='no_show').length, color:'#ef4444' },
     { label: 'لغو', value: bookings.filter((b)=>b.status==='cancelled').length, color:'#e2e8f0' },
@@ -62,7 +62,7 @@ export function StaffBookings({ todayOnly = false }) {
       {bookings.length>0 && (
         <div className="grid lg:grid-cols-2 gap-4">
           <Card><CardHeader><CardTitle className="text-sm">وضعیت نوبت‌ها</CardTitle></CardHeader><CardContent><DonutChart data={byStatus} size={120} /></CardContent></Card>
-          <Card><CardHeader><CardTitle className="text-sm">روند ۷ نوبت اخیر</CardTitle></CardHeader><CardContent><LineChart data={daily.length?daily:[{label:'-',value:0}]} color="#0d9488" /></CardContent></Card>
+          <Card><CardHeader><CardTitle className="text-sm">روند ۷ نوبت اخیر</CardTitle></CardHeader><CardContent><LineChart data={daily.length?daily:[{label:'-',value:0}]} color="#0284C7" /></CardContent></Card>
         </div>
       )}
 
