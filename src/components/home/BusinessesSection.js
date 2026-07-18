@@ -56,7 +56,7 @@ export function BusinessesSection() {
             <a
               key={biz.id}
               href={businessUrl(biz.slug)}
-              target="_blank"
+              // same-tab برای حس یکپارچگی - قبلا _blank بود که حس نیو تب می‌داد
               rel="noopener noreferrer"
               className="group rounded-[1.5rem] border border-border bg-white overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/20 hover:-translate-y-1 transition-all cursor-pointer"
             >

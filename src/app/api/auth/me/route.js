@@ -5,16 +5,20 @@ import { db } from '@/db';
 import { users } from '@/db/schema/users';
 import { eq } from 'drizzle-orm';
 
+function corsHeadersFromRequest(request) {
+  const origin = request?.headers?.get('origin') || '';
+  const headers = { Vary: 'Origin' };
+  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me') || origin.includes('business.localhost') || origin.includes('127.0.0.1'))) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  }
+  return headers;
+}
+
 export async function GET(request) {
   try {
     const user = await getCurrentUser();
-    const origin = request?.headers?.get('origin') || '';
-    const headers = {};
-    // CORS for subdomain SSO - allow *.localhost and *.nobatet.com
-    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('business.localhost') || origin.includes('127.0.0.1'))) {
-      headers['Access-Control-Allow-Origin'] = origin;
-      headers['Access-Control-Allow-Credentials'] = 'true';
-    }
+    const headers = corsHeadersFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ ok: false, user: null }, { status: 401, headers });
@@ -22,20 +26,21 @@ export async function GET(request) {
     return NextResponse.json({ ok: true, user }, { headers });
   } catch (err) {
     console.error('[api/auth/me]', err);
+    const headers = corsHeadersFromRequest(request);
     return NextResponse.json(
       { ok: false, error: 'خطای سرور' },
-      { status: 500 },
+      { status: 500, headers },
     );
   }
 }
 
 export async function OPTIONS(request) {
   const origin = request.headers.get('origin') || '';
-  const headers = {};
-  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com'))) {
+  const headers = { Vary: 'Origin' };
+  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Credentials'] = 'true';
-    headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+    headers['Access-Control-Allow-Methods'] = 'GET, POST, PATCH, OPTIONS';
     headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
   }
   return new NextResponse(null, { status: 204, headers });

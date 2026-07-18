@@ -1,5 +1,6 @@
 import { Vazirmatn, Inter, Lalezar } from 'next/font/google';
 import { ServiceWorkerRegister } from '@/components/pwa/ServiceWorkerRegister';
+import { SsoProvider } from '@/components/auth/SsoProvider';
 import './globals.css';
 
 const vazirmatn = Vazirmatn({
@@ -191,6 +192,7 @@ export default function RootLayout({ children }) {
         <div id="main-content" className="flex-1 flex flex-col">
           {children}
         </div>
+        <SsoProvider />
         <ServiceWorkerRegister />
       </body>
     </html>

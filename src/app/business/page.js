@@ -140,22 +140,23 @@ export default async function BusinessDashboardPage() {
               <a
                 key={item.href}
                 href={item.href}
-                target="_blank"
+                // same-tab برای سوییچ روان - بدون target _blank
                 rel="noopener noreferrer"
-                className="rounded-2xl border border-border bg-white p-5 hover:border-primary transition-colors"
+                className="rounded-2xl border border-border bg-white p-5 hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
               >
-                <p className="font-bold">{item.t}</p>
+                <p className="font-bold group-hover:text-primary transition-colors">{item.t} →</p>
                 <p className="text-xs text-muted-foreground mt-1" dir="ltr">
                   {item.d}
                 </p>
+                <p className="text-[10px] text-muted-foreground mt-2">same-tab • احراز هویت یکپارچه</p>
               </a>
             ) : (
               <Link
                 key={item.href}
                 href={item.href}
-                className="rounded-2xl border border-border bg-white p-5 hover:border-primary transition-colors"
+                className="rounded-2xl border border-border bg-white p-5 hover:border-primary hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group"
               >
-                <p className="font-bold">{item.t}</p>
+                <p className="font-bold group-hover:text-primary transition-colors">{item.t}</p>
                 <p className="text-xs text-muted-foreground mt-1">{item.d}</p>
               </Link>
             ),

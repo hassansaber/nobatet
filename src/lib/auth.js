@@ -16,54 +16,141 @@ function getExpiresIn() {
   return process.env.JWT_EXPIRES_IN || '30d';
 }
 
+/**
+ * تشخیص base host بدون پورت
+ * مثال: localhost:3001 -> localhost
+ *        nobatet.com -> nobatet.com
+ *        https://nobatet.com -> nobatet.com
+ */
+function getRawBaseHost() {
+  try {
+    const raw =
+      process.env.NEXT_PUBLIC_BASE_DOMAIN ||
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') ||
+      'localhost:3001';
+    // ممکنه شامل مسیر باشه، فقط host رو بگیر
+    const hostPart = raw.split('/')[0];
+    const host = hostPart.split(':')[0].toLowerCase().trim();
+    return host || 'localhost';
+  } catch {
+    return 'localhost';
+  }
+}
+
+function isLocalHostBase() {
+  const host = getRawBaseHost();
+  return (
+    !host ||
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host === '0.0.0.0' ||
+    host.endsWith('.localhost')
+  );
+}
+
+function isLvhMeBase() {
+  const host = getRawBaseHost();
+  return host === 'lvh.me' || host.endsWith('.lvh.me');
+}
+
+/**
+ * دامنه کوکی:
+ * - localhost / 127.0.0.1 => undefined (host-only) چون Domain=localhost توسط مرورگر رد می‌شود
+ * - lvh.me => .lvh.me (lvh.me اجازه شیر کوکی روی ساب‌دامین را می‌دهد و به 127.0.0.1 رزولو می‌شود)
+ * - prod   => .nobatet.com (یا هرچی در ENV هست) تا همه ساب‌دامین‌ها پوشش داده شوند
+ */
 function getCookieDomain() {
   try {
-    const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'localhost:3001';
-    const host = base.split(':')[0].toLowerCase(); // localhost or nobatet.com
-    if (!host || host === 'localhost' || host === '127.0.0.1') {
-      // در محیط لوکال، تلاش می‌کنیم Domain=localhost ست کنیم تا *.localhost هم کوکی را بگیرد (کروم جدید ساپورت می‌کند)
-      // اگر مرورگر قبول نکرد، fallback بدون Domain استفاده می‌شود و سپس SSO sync کوکی را روی سابدامین ست می‌کند
-      return 'localhost';
+    const host = getRawBaseHost();
+
+    // لوکال خالص: نباید domain ست کنیم چون مرورگر قبول نمی‌کند
+    if (isLocalHostBase()) {
+      return undefined;
     }
-    // برای پروداکشن: .nobatet.com تا ساب‌دامین‌ها پوشش داده شوند
+
+    // lvh.me حالت خاص برای dev با ساب‌دامین واقعی
+    if (isLvhMeBase()) {
+      // اگر base = foo.lvh.me باشه، می‌خوایم .lvh.me برگردونیم، نه .foo.lvh.me
+      // ساده‌ترین: اگر لاین شامل lvh.me هست، دامنه را .lvh.me برگردون
+      return '.lvh.me';
+    }
+
+    // پروداکشن: دامنه را با نقطه برگردون
+    // اگر host شامل نقطه نباشد (مثلا فقط nobatet) فرض می‌کنیم همون کافیست
     if (host.startsWith('.')) return host;
+    // تمیز کن: اگر business.nobatet.com به اشتباه در ENV باشد، فقط eTLD+1 را می‌خواهیم؟
+    // برای سادگی اگر بیشتر از 2 بخش دارد و شامل business یا visitor است، دو بخش آخر را بگیر
+    const parts = host.split('.');
+    if (parts.length > 2) {
+      // اگر الگو *.business.nobatet.com یا *.visitor.nobatet.com → دو بخش آخر
+      // یا اگر 3 بخش مثل app.nobatet.com → دو بخش آخر
+      const lastTwo = parts.slice(-2).join('.');
+      // استثنا: co.uk ها نداریم، پس lastTwo کافیست
+      return `.${lastTwo}`;
+    }
     return `.${host}`;
   } catch {
     return undefined;
   }
 }
 
-function isLocalHostDomain() {
-  const d = getCookieDomain();
-  return d === 'localhost' || d === '127.0.0.1';
-}
-
 function getCookieOptions(maxAgeSeconds) {
   const domain = getCookieDomain();
   const isProd = process.env.NODE_ENV === 'production';
-  const isLocal = isLocalHostDomain();
+  const isLocal = !domain; // وقتی domain نداریم یعنی لوکال هستیم
+  const isLvh = isLvhMeBase();
 
-  // برای localhost ما نیاز به SameSite=None + Secure داریم تا کوکی در fetch کراس‌سایت (business.localhost → localhost) فرستاده شود
-  // localhost به عنوان Secure context حساب می‌شود، پس Secure حتی روی http قابل قبول است (کروم)
-  // در پروداکشن SameSite=Lax کافی است چون سابدامین‌ها SameSite محسوب می‌شوند (eTLD+1 یکی است)
-  const opts = {
+  // منطق جدید:
+  // - لوکال true (localhost): SameSite=None + Secure=true لازم داریم تا کوکی در fetch کراس‌سایت (sub.localhost -> localhost) ارسال شود
+  // - lvh.me: SameSite=Lax کافیست چون eTLD+1 = lvh.me و ساب‌دامین‌ها SameSite محسوب می‌شوند
+  // - پروداکشن: SameSite=Lax + Domain=.nobatet.com
+
+  if (isLocal && !isLvh) {
+    // localhost واقعی
+    const opts = {
+      httpOnly: true,
+      secure: true, // localhost secure context
+      sameSite: 'none',
+      path: '/',
+      maxAge: maxAgeSeconds,
+    };
+    // domain نداریم
+    return opts;
+  }
+
+  if (isLvh) {
+    // lvh.me هم Secure لازم دارد؟ روی http هم کار می‌کند ولی Secure true در لوکال مجاز است
+    return {
+      httpOnly: true,
+      secure: false, // lvh.me معمولا روی http لوکال اجراست، Secure false تا ست شود
+      sameSite: 'lax',
+      path: '/',
+      domain,
+      maxAge: maxAgeSeconds,
+    };
+  }
+
+  // پروداکشن
+  return {
     httpOnly: true,
-    secure: isLocal ? true : isProd, // localhost → secure true برای اجازه SameSite=None
-    sameSite: isLocal ? 'none' : 'lax',
+    secure: isProd,
+    sameSite: 'lax',
     path: '/',
+    domain,
     maxAge: maxAgeSeconds,
   };
-
-  if (domain) {
-    // برای پروداکشن حتما Domain ست می‌کنیم
-    // برای localhost هم تلاش می‌کنیم ست کنیم، اگر مرورگر قبول نکرد در createSession fallback اجرا می‌شود
-    opts.domain = domain;
-  }
-  return opts;
 }
 
 export function getCookieDomainForClient() {
   return getCookieDomain();
+}
+
+export function getBaseHostForClient() {
+  return getRawBaseHost();
+}
+
+export function isLocalEnv() {
+  return isLocalHostBase() && !isLvhMeBase();
 }
 
 // Lazy db import to avoid circular
@@ -85,7 +172,10 @@ export async function buildSessionPayload(userId) {
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!user) throw new Error('User not found for session');
 
-  const globalRows = await db.select({ role: userRoles.role }).from(userRoles).where(eq(userRoles.userId, userId));
+  const globalRows = await db
+    .select({ role: userRoles.role })
+    .from(userRoles)
+    .where(eq(userRoles.userId, userId));
   const globalRoles = globalRows.map((r) => r.role);
 
   const memberships = await db
@@ -99,7 +189,7 @@ export async function buildSessionPayload(userId) {
     .innerJoin(businesses, eq(businesses.id, businessMembers.businessId))
     .where(and(eq(businessMembers.userId, userId), eq(businessMembers.isActive, true)));
 
-  // تعیین role قدیمی برای سازگاری backward compat (اولین global یا اولین membership یا role ستون users)
+  // تعیین role قدیمی برای سازگاری backward compat
   let legacyRole = 'customer';
   if (globalRoles.includes('super_admin')) legacyRole = 'super_admin';
   else if (globalRoles.includes('visitor')) legacyRole = 'visitor';
@@ -108,7 +198,7 @@ export async function buildSessionPayload(userId) {
     if (hasOwner) legacyRole = 'business_owner';
     else {
       const hasManager = memberships.find((m) => m.role === 'manager');
-      if (hasManager) legacyRole = 'business_owner'; // manager هم به business می‌رود
+      if (hasManager) legacyRole = 'business_owner';
       else legacyRole = 'staff';
     }
   } else {
@@ -120,7 +210,7 @@ export async function buildSessionPayload(userId) {
     phone: user.phone,
     firstName: user.firstName || undefined,
     lastName: user.lastName || undefined,
-    role: legacyRole, // backward compat
+    role: legacyRole,
     tokenVersion: user.tokenVersion ?? 0,
     globalRoles,
     memberships: memberships.map((m) => ({
@@ -134,8 +224,6 @@ export async function buildSessionPayload(userId) {
 
 /**
  * ساخت JWT و ست کردن کوکی httpOnly
- * ورودی جدید: userId string
- * برای سازگاری قدیمی اگر payload object داده شد، از sub آن استفاده می‌کنیم
  */
 export async function createSession(userIdOrPayload) {
   let userId;
@@ -172,21 +260,39 @@ export async function createSession(userIdOrPayload) {
 
   const cookieStore = await cookies();
   const cookieOpts = getCookieOptions(60 * 60 * 24 * 30);
-  // تلاش برای ست با domain، اگر مرورگر قبول نکرد fallback بدون domain (برای localhost قدیمی)
-  try {
-    cookieStore.set(SESSION_COOKIE, token, cookieOpts);
-  } catch (e) {
-    // fallback بدون domain برای localhost
-    const fallbackOpts = { ...cookieOpts };
-    delete fallbackOpts.domain;
-    cookieStore.set(SESSION_COOKIE, token, fallbackOpts);
+
+  // ست کردن اصلی
+  cookieStore.set(SESSION_COOKIE, token, cookieOpts);
+
+  // برای loacalhost که domain نداریم، یک نسخه fallback با SameSite=Lax هم ست می‌کنیم
+  // تا در حالت same-site navigation هم کوکی ارسال شود
+  if (!cookieOpts.domain) {
+    try {
+      cookieStore.set(SESSION_COOKIE, token, {
+        ...cookieOpts,
+        sameSite: 'lax',
+        secure: false,
+        // حذف domain قبلا undefined است
+      });
+    } catch {}
+  }
+
+  // برای اطمینان در پروداکشن هم یک نسخه بدون domain ست می‌کنیم؟
+  // نه، فقط با domain کافیست. ولی برای دوران گذار هر دو را ست می‌کنیم تا کلاینت‌های قدیمی پاک شوند
+  if (cookieOpts.domain) {
+    try {
+      // نسخه دوم بدون domain برای پاکسازی
+      // نمی‌خواهیم overwrite کنیم، فقط اگر قدیمی با host-only بود آن را هم ست کنیم؟
+      // در عمل فقط یکی می‌ماند، مهم نیست
+    } catch {}
   }
 
   return token;
 }
 
 /**
- * خواندن و verify نشست فعلی با چک tokenVersion و رفرش خاموش
+ * خواندن و verify نشست فعلی با چک tokenVersion
+ * اگر tokenVersion mismatch بود، سعی می‌کنیم رفرش کنیم (برای تغییر نقش)
  */
 export async function getSession() {
   const cookieStore = await cookies();
@@ -203,11 +309,17 @@ export async function getSession() {
     try {
       const db = await getDb();
       const { users } = await import('@/db/schema/users.js');
-      const [current] = await db.select({ tv: users.tokenVersion }).from(users).where(eq(users.id, sub)).limit(1);
+      const [current] = await db
+        .select({ tv: users.tokenVersion })
+        .from(users)
+        .where(eq(users.id, sub))
+        .limit(1);
       if (!current) return null;
 
       if ((current.tv ?? 0) !== tokenVersionInJwt) {
         // نقش عوض شده → سشن را بی‌صدا رفرش کن
+        // استثنا: اگر current.tv > tokenVersionInJwt + 10 باشه احتمال لاگ‌اوت گروهی است؟ نه، باز هم رفرش می‌کنیم
+        // برای لاگ‌اوت ما tokenVersion را زیاد نمی‌کنیم، فقط کوکی پاک می‌شود، پس رفرش مشکلی ندارد
         const freshPayload = await buildSessionPayload(sub);
         const newToken = await new SignJWT({
           phone: freshPayload.phone,
@@ -225,13 +337,7 @@ export async function getSession() {
           .sign(getJwtSecret());
 
         const cookieOpts = getCookieOptions(60 * 60 * 24 * 30);
-        try {
-          cookieStore.set(SESSION_COOKIE, newToken, cookieOpts);
-        } catch {
-          const fallback = { ...cookieOpts };
-          delete fallback.domain;
-          cookieStore.set(SESSION_COOKIE, newToken, fallback);
-        }
+        cookieStore.set(SESSION_COOKIE, newToken, cookieOpts);
 
         return {
           sub: freshPayload.sub,
@@ -246,7 +352,7 @@ export async function getSession() {
         };
       }
     } catch (e) {
-      // اگر DB در دسترس نبود، با payload فعلی ادامه بده (edge case)
+      // اگر DB در دسترس نبود، با payload فعلی ادامه بده
       console.warn('[getSession] tokenVersion check failed', e?.message);
     }
 
@@ -290,37 +396,122 @@ export async function verifyToken(token) {
 
 export async function destroySession() {
   const cookieStore = await cookies();
-  const baseOpts = getCookieOptions(0);
-  // برای حذف باید maxAge=0 و همان domain/path باشد
-  try {
-    cookieStore.set(SESSION_COOKIE, '', { ...baseOpts, maxAge: 0 });
-  } catch {
-    const fallback = { ...baseOpts, maxAge: 0 };
-    delete fallback.domain;
-    cookieStore.set(SESSION_COOKIE, '', fallback);
+  const domain = getCookieDomain();
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // لیست ترکیبات ممکن که باید پاک شوند تا در هر دو حالت قدیمی و جدید کوکی حذف شود
+  const candidates = [];
+
+  // 1) حالت فعلی (domain + sameSite بر اساس محیط)
+  candidates.push(getCookieOptions(0));
+
+  // 2) بدون domain، lax
+  candidates.push({
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+
+  // 3) بدون domain، none + secure true (localhost قدیمی)
+  candidates.push({
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    path: '/',
+    maxAge: 0,
+  });
+
+  // 4) با domain اگر وجود دارد، اما sameSite none
+  if (domain) {
+    candidates.push({
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'none',
+      path: '/',
+      domain,
+      maxAge: 0,
+    });
+    candidates.push({
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      domain,
+      maxAge: 0,
+    });
+    candidates.push({
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+      domain,
+      maxAge: 0,
+    });
   }
-  // پاک کردن active workspace هم
-  try {
-    const activeOpts = {
+
+  // 5) حالت قدیمی با domain=localhost که مرورگر رد می‌کرد اما برای اطمینان
+  candidates.push({
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    path: '/',
+    domain: 'localhost',
+    maxAge: 0,
+  });
+  candidates.push({
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    path: '/',
+    domain: 'localhost',
+    maxAge: 0,
+  });
+
+  for (const opts of candidates) {
+    try {
+      cookieStore.set(SESSION_COOKIE, '', { ...opts, maxAge: 0 });
+    } catch {}
+  }
+
+  // پاک کردن active workspace - چند حالت
+  const activeCandidates = [
+    {
       httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProd,
       sameSite: 'lax',
       path: '/',
       maxAge: 0,
-    };
-    const domain = getCookieDomain();
-    if (domain && domain !== 'localhost') activeOpts.domain = domain;
-    else if (domain === 'localhost') activeOpts.domain = domain;
-    cookieStore.set(ACTIVE_WORKSPACE_COOKIE, '', activeOpts);
-  } catch {
+      ...(domain ? { domain } : {}),
+    },
+    {
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0,
+    },
+    {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: 0,
+    },
+    {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: 0,
+      domain: 'localhost',
+    },
+  ];
+
+  for (const opts of activeCandidates) {
     try {
-      cookieStore.set(ACTIVE_WORKSPACE_COOKIE, '', {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 0,
-      });
+      cookieStore.set(ACTIVE_WORKSPACE_COOKIE, '', opts);
     } catch {}
   }
 }
@@ -347,9 +538,6 @@ export async function comparePassword(password, hash) {
   return bcrypt.compare(password, hash);
 }
 
-/**
- * مسیر داشبورد بر اساس نقش قدیمی (برای سازگاری)
- */
 export function dashboardPathForRole(role) {
   switch (role) {
     case 'super_admin':
@@ -366,19 +554,12 @@ export function dashboardPathForRole(role) {
   }
 }
 
-/**
- * مسیر هوشمند بر اساس سشن جدید
- * این برای دکمه داشبورد استفاده می‌شود، نه برای بعد از لاگین مستقیم
- * بعد از لاگین باید به همون صفحه قبلی (یا هوم) برگردد، نه داشبورد
- */
 export function dashboardPathForSession(session) {
   if (!session) return '/login';
-  // اگر فقط سوپرادمین است
   const globalCount = (session.globalRoles || []).length;
   const membershipCount = (session.memberships || []).length;
   const total = globalCount + membershipCount;
 
-  // اگر بیش از یک فضای کاری دارد → صفحه انتخاب
   if (total > 1) return '/choose-workspace';
 
   if (session.globalRoles?.includes('super_admin')) return '/admin';
@@ -390,7 +571,6 @@ export function dashboardPathForSession(session) {
     return '/staff';
   }
 
-  // پیش‌فرض بر اساس role قدیمی
   if (session.role === 'business_owner') return '/business';
   if (session.role === 'staff') return '/staff';
   if (session.role === 'visitor') return '/visitor';

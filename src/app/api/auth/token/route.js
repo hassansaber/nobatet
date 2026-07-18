@@ -8,7 +8,7 @@ const SESSION_COOKIE = 'nobatet_session';
 
 function getCorsHeaders(request) {
   const origin = request.headers.get('origin') || '';
-  const headers = {};
+  const headers = { Vary: 'Origin' };
   if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Credentials'] = 'true';
@@ -24,8 +24,6 @@ export async function GET(request) {
     if (!token) {
       return NextResponse.json({ ok: false, error: 'No session' }, { status: 401, headers: cors });
     }
-    // return trimmed token for SSO sync – the sync endpoint will verify and set it on the requesting subdomain
-    // We also return user payload for debugging (without exposing secret)
     return NextResponse.json({ ok: true, token }, { headers: cors });
   } catch (e) {
     console.error('[api/auth/token]', e?.message);
@@ -35,7 +33,7 @@ export async function GET(request) {
 
 export async function OPTIONS(request) {
   const origin = request.headers.get('origin') || '';
-  const headers = {};
+  const headers = { Vary: 'Origin' };
   if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Credentials'] = 'true';

@@ -14,29 +14,72 @@ function getJwtSecret() {
   return new TextEncoder().encode(secret);
 }
 
-function getCookieDomain() {
+function getRawBaseHost() {
   try {
-    const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'localhost:3001';
-    const host = base.split(':')[0].toLowerCase();
-    if (!host || host === 'localhost' || host === '127.0.0.1') return 'localhost';
-    if (host.startsWith('.')) return host;
-    return `.${host}`;
-  } catch { return undefined; }
+    const raw =
+      process.env.NEXT_PUBLIC_BASE_DOMAIN ||
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') ||
+      'localhost:3001';
+    const hostPart = raw.split('/')[0];
+    const host = hostPart.split(':')[0].toLowerCase().trim();
+    return host || 'localhost';
+  } catch {
+    return 'localhost';
+  }
+}
+
+function getCookieDomain() {
+  const host = getRawBaseHost();
+  if (!host || host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost')) {
+    return undefined;
+  }
+  if (host === 'lvh.me' || host.endsWith('.lvh.me')) {
+    return '.lvh.me';
+  }
+  if (host.startsWith('.')) return host;
+  const parts = host.split('.');
+  if (parts.length > 2) {
+    const lastTwo = parts.slice(-2).join('.');
+    return `.${lastTwo}`;
+  }
+  return `.${host}`;
 }
 
 function getCookieOptions(maxAgeSeconds) {
   const domain = getCookieDomain();
   const isProd = process.env.NODE_ENV === 'production';
-  const isLocal = domain === 'localhost';
-  const opts = {
+  const isLvh = getRawBaseHost() === 'lvh.me' || getRawBaseHost().endsWith('.lvh.me');
+
+  if (!domain) {
+    // localhost
+    return {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      path: '/',
+      maxAge: maxAgeSeconds,
+    };
+  }
+
+  if (isLvh) {
+    return {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+      domain,
+      maxAge: maxAgeSeconds,
+    };
+  }
+
+  return {
     httpOnly: true,
-    secure: isLocal ? true : isProd,
-    sameSite: isLocal ? 'none' : 'lax',
+    secure: isProd,
+    sameSite: 'lax',
     path: '/',
+    domain,
     maxAge: maxAgeSeconds,
   };
-  if (domain) opts.domain = domain;
-  return opts;
 }
 
 function corsHeaders(request) {
@@ -45,6 +88,7 @@ function corsHeaders(request) {
   if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
     h['Access-Control-Allow-Origin'] = origin;
     h['Access-Control-Allow-Credentials'] = 'true';
+    h['Vary'] = 'Origin';
   }
   return h;
 }
@@ -57,15 +101,11 @@ export async function POST(request) {
     if (!token) {
       return NextResponse.json({ ok: false, error: 'token required' }, { status: 400, headers: cors });
     }
-    // Verify token
     const verified = await verifyToken(token);
     if (!verified) {
       return NextResponse.json({ ok: false, error: 'Invalid token' }, { status: 401, headers: cors });
     }
 
-    // Re-sign to ensure same expiration handling? Keep original token to preserve exp
-    // But we will set the same token value (it was already signed)
-    // Optionally create fresh token from userId to get updated payload
     const { db } = await import('@/db/index.js');
     const { users } = await import('@/db/schema/users.js');
     const { eq } = await import('drizzle-orm');
@@ -74,7 +114,6 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404, headers: cors });
     }
 
-    // Build fresh payload to ensure tokenVersion matches
     const { buildSessionPayload } = await import('@/lib/auth.js');
     const payload = await buildSessionPayload(verified.sub);
 
@@ -96,22 +135,19 @@ export async function POST(request) {
     const store = await cookies();
     const opts = getCookieOptions(60 * 60 * 24 * 30);
 
-    // Try with domain, fallback without
-    try {
-      store.set(SESSION_COOKIE, freshToken, opts);
-    } catch {
-      const fallback = { ...opts };
-      delete fallback.domain;
-      store.set(SESSION_COOKIE, freshToken, fallback);
-    }
+    // ست اصلی
+    store.set(SESSION_COOKIE, freshToken, opts);
 
-    // Also set without domain as extra fallback for localhost subdomains that reject Domain attribute
-    try {
-      const fallback2 = { ...opts };
-      delete fallback2.domain;
-      // httpOnly false? No keep httpOnly
-      store.set(SESSION_COOKIE, freshToken, fallback2);
-    } catch {}
+    // اگر لوکال هستیم (بدون domain) یک نسخه lax هم ست کن
+    if (!opts.domain) {
+      try {
+        store.set(SESSION_COOKIE, freshToken, {
+          ...opts,
+          sameSite: 'lax',
+          secure: false,
+        });
+      } catch {}
+    }
 
     return NextResponse.json({ ok: true, user: payload }, { headers: cors });
   } catch (e) {
@@ -132,8 +168,6 @@ export async function OPTIONS(request) {
 }
 
 export async function GET(request) {
-  // GET version for convenience: if session exists on main domain cookie, client on subdomain can call GET /api/auth/sync
-  // but GET cannot read cookie from other domain; so we rely on POST with token. For same-origin GET, just check session.
   const cors = corsHeaders(request);
   try {
     const { getSession } = await import('@/lib/auth.js');

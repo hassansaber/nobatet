@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 
+function corsHeaders(request) {
+  const origin = request?.headers?.get('origin') || '';
+  const h = { Vary: 'Origin' };
+  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
+    h['Access-Control-Allow-Origin'] = origin;
+    h['Access-Control-Allow-Credentials'] = 'true';
+  }
+  return h;
+}
+
 export async function GET(request) {
   try {
     const session = await getSession();
-    const origin = request?.headers?.get('origin') || '';
-    const headers = {};
-    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
-      headers['Access-Control-Allow-Origin'] = origin;
-      headers['Access-Control-Allow-Credentials'] = 'true';
-    }
+    const headers = corsHeaders(request);
 
     if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers });
 
@@ -25,7 +30,7 @@ export async function GET(request) {
         desc: 'مدیریت کل پلتفرم، بیزنس‌ها، پلن‌ها، ویزیتورها',
         href: '/admin',
         redirectTo: '/admin',
-        icon: 'crown', // lucide key
+        icon: 'crown',
         color: '#111827',
       });
     }
@@ -77,34 +82,32 @@ export async function GET(request) {
       });
     }
 
-    return NextResponse.json({
-      ok: true,
-      session: {
-        sub: session.sub,
-        phone: session.phone,
-        firstName: session.firstName,
-        lastName: session.lastName,
-        globalRoles: session.globalRoles,
-        memberships: session.memberships,
+    return NextResponse.json(
+      {
+        ok: true,
+        session: {
+          sub: session.sub,
+          phone: session.phone,
+          firstName: session.firstName,
+          lastName: session.lastName,
+          globalRoles: session.globalRoles,
+          memberships: session.memberships,
+        },
+        dashboards,
+        total: dashboards.length,
       },
-      dashboards,
-      total: dashboards.length,
-    }, { headers });
+      { headers },
+    );
   } catch (err) {
     console.error('[workspaces]', err);
-    const origin = request?.headers?.get('origin') || '';
-    const headers = {};
-    if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
-      headers['Access-Control-Allow-Origin'] = origin;
-      headers['Access-Control-Allow-Credentials'] = 'true';
-    }
+    const headers = corsHeaders(request);
     return NextResponse.json({ ok: false, error: 'خطای سرور' }, { status: 500, headers });
   }
 }
 
 export async function OPTIONS(request) {
   const origin = request.headers.get('origin') || '';
-  const headers = {};
+  const headers = { Vary: 'Origin' };
   if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Credentials'] = 'true';

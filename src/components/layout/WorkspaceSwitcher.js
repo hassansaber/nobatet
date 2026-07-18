@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Crown, Handshake, Building2, Briefcase, User, ArrowLeftRight, ChevronDown, LayoutDashboard } from 'lucide-react';
+import { Crown, Handshake, Building2, Briefcase, User, ChevronDown, LayoutDashboard } from 'lucide-react';
 
 const ICON_MAP = {
   crown: Crown,
@@ -11,6 +11,21 @@ const ICON_MAP = {
   briefcase: Briefcase,
   user: User,
 };
+
+function getCookieDomainForClient() {
+  try {
+    const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'localhost:3001';
+    const host = base.split(':')[0].toLowerCase();
+    if (!host || host === 'localhost' || host === '127.0.0.1' || host.endsWith('.localhost')) return undefined;
+    if (host === 'lvh.me' || host.endsWith('.lvh.me')) return '.lvh.me';
+    if (host.startsWith('.')) return host;
+    const parts = host.split('.');
+    if (parts.length > 2) return `.${parts.slice(-2).join('.')}`;
+    return `.${host}`;
+  } catch {
+    return undefined;
+  }
+}
 
 export function WorkspaceSwitcher() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -22,7 +37,7 @@ export function WorkspaceSwitcher() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/auth/workspaces', { credentials: 'include' });
+        const res = await fetch('/api/auth/workspaces', { credentials: 'include', cache: 'no-store' });
         const data = await res.json();
         if (data.ok) setWorkspaces(data.dashboards || []);
       } catch {} finally { setLoading(false); }
@@ -46,13 +61,18 @@ export function WorkspaceSwitcher() {
 
   function select(ws) {
     try {
-      document.cookie = `nobatet_active_workspace=${encodeURIComponent(ws.businessId || ws.type)}; path=/; max-age=${60*60*24*30}; SameSite=Lax`;
+      const domain = getCookieDomainForClient();
+      const baseCookie = `nobatet_active_workspace=${encodeURIComponent(ws.businessId || ws.type)}; path=/; max-age=${60*60*24*30}; SameSite=Lax`;
+      document.cookie = baseCookie;
+      if (domain) {
+        // تلاش برای ست با domain برای اشتراک بین ساب‌دامین‌ها
+        document.cookie = `${baseCookie}; domain=${domain}`;
+      }
     } catch {}
     setOpen(false);
     router.push(ws.href);
   }
 
-  // Current workspace from cookie or first
   const current = workspaces[0];
   const CurrentIcon = current ? (ICON_MAP[current.icon] || Building2) : Building2;
 
@@ -62,9 +82,9 @@ export function WorkspaceSwitcher() {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-xl glass px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/60 transition-all cursor-pointer min-h-[32px]"
+        className="flex items-center gap-2 rounded-xl bg-white/70 backdrop-blur border border-white/40 px-2.5 py-1.5 text-[11px] font-medium hover:bg-white/90 transition-all cursor-pointer min-h-[32px] shadow-sm"
       >
-        <span className="size-6 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: current?.color || '#0284C7' }}>
+        <span className="size-6 rounded-lg flex items-center justify-center text-white shadow-sm" style={{ backgroundColor: current?.color || '#0284C7' }}>
           <CurrentIcon className="size-3.5" />
         </span>
         <span className="hidden sm:inline max-w-[90px] truncate">{current?.title || 'فضا'}</span>
@@ -72,7 +92,7 @@ export function WorkspaceSwitcher() {
         <ChevronDown className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div role="menu" className="absolute top-full mt-2 right-0 z-50 w-80 rounded-2xl border border-white/40 glass-strong shadow-xl p-2">
+        <div role="menu" className="absolute top-full mt-2 right-0 z-50 w-80 rounded-2xl border border-white/40 bg-white/90 backdrop-blur-xl shadow-xl p-2">
           <div className="flex items-center justify-between px-2 py-1">
             <p className="text-[11px] font-medium text-muted-foreground">فضاهای کاری شما</p>
             <span className="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full">{workspaces.length} فضا</span>
@@ -85,7 +105,7 @@ export function WorkspaceSwitcher() {
                   key={ws.key}
                   role="menuitem"
                   onClick={() => select(ws)}
-                  className="w-full text-right flex items-center gap-2.5 rounded-xl px-3 py-2.5 hover:bg-white/60 border border-transparent hover:border-white/40 transition-all cursor-pointer"
+                  className="w-full text-right flex items-center gap-2.5 rounded-xl px-3 py-2.5 hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all cursor-pointer"
                 >
                   <span className="size-8 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: ws.color + '18', color: ws.color }}>
                     <Icon className="size-4" />
@@ -99,11 +119,11 @@ export function WorkspaceSwitcher() {
               );
             })}
           </div>
-          <div className="border-t border-white/40 mt-2 pt-2 grid grid-cols-2 gap-2">
-            <button onClick={() => { setOpen(false); router.push('/choose-workspace'); }} className="text-[11px] font-medium py-2.5 rounded-xl glass hover:bg-white/70 cursor-pointer">
+          <div className="border-t border-slate-100 mt-2 pt-2 grid grid-cols-2 gap-2">
+            <button onClick={() => { setOpen(false); router.push('/choose-workspace'); }} className="text-[11px] font-medium py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 cursor-pointer transition-colors">
               صفحه انتخاب
             </button>
-            <button onClick={() => { setOpen(false); router.push('/business'); }} className="text-[11px] font-medium py-2.5 rounded-xl bg-primary text-white hover:bg-secondary cursor-pointer">
+            <button onClick={() => { setOpen(false); router.push('/business'); }} className="text-[11px] font-medium py-2.5 rounded-xl bg-primary text-white hover:bg-secondary cursor-pointer transition-colors">
               + کسب‌وکار جدید
             </button>
           </div>
