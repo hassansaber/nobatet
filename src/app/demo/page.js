@@ -16,11 +16,12 @@ const accounts = [
 
 function getDemoUrls() {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'localhost:3001';
-  const isLocal = baseDomain.includes('localhost') || baseDomain.startsWith('127.');
+  const isLocal = baseDomain.includes('localhost') || baseDomain.startsWith('127.') || baseDomain.includes('lvh.me');
   const protocol = isLocal ? 'http' : 'https';
   return {
-    businessDemo: `${protocol}://demo.business.${baseDomain}`,
-    visitorDemo: `${protocol}://reza-visitor.visitor.${baseDomain}`,
+    // نسخه جدید تک سطحی: demo.nobatet.com به جای demo.business.nobatet.com
+    businessDemo: `${protocol}://demo.${baseDomain}`,
+    visitorDemo: `${protocol}://reza-visitor.${baseDomain}`,
     isLocal,
   };
 }
@@ -29,8 +30,8 @@ export default function DemoPage() {
   const { businessDemo, visitorDemo, isLocal } = getDemoUrls();
 
   const flows = [
-    { title: 'لندینگ سالن نمونه (wildcard)', href: businessDemo, desc: `رزرو واقعی — در پروداکشن: demo.business.nobatet.com`, cta: 'باز کردن لندینگ (same-tab)', Icon: Sparkles, external: true },
-    { title: 'لندینگ ویزیتور (wildcard)', href: visitorDemo, desc: `صفحه معرف با کد REZA20 — reza-visitor.visitor.nobatet.com`, cta: 'مشاهده صفحه معرف', Icon: Link2, external: true },
+    { title: 'لندینگ سالن نمونه (wildcard تک سطحی)', href: businessDemo, desc: `رزرو واقعی — در پروداکشن: moristyle.nobatet.com (قبلاً demo.business.nobatet.com)`, cta: 'باز کردن لندینگ (same-tab)', Icon: Sparkles, external: true },
+    { title: 'لندینگ ویزیتور (wildcard تک سطحی)', href: visitorDemo, desc: `صفحه معرف با کد REZA20 — reza-visitor.nobatet.com`, cta: 'مشاهده صفحه معرف', Icon: Link2, external: true },
     { title: 'قیمت‌گذاری پلن‌ها', href: '/pricing', desc: 'پلن‌های starter / pro / business', cta: 'دیدن قیمت‌ها', Icon: Gem },
   ];
 

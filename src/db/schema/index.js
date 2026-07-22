@@ -10,3 +10,4 @@ export * from './bookings.js';
 export * from './booking-services.js';
 export * from './crm.js';
 export * from './saas.js';
+export * from './auth.js';

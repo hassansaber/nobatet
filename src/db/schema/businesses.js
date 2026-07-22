@@ -28,6 +28,7 @@ export const subscriptionStatusEnum = pgEnum('subscription_status', [
 
 /**
  * کسب‌وکار (Tenant) — هر بیزنس ساب‌دامین اختصاصی دارد.
+ * نسخه جدید تک سطحی: moristyle.nobatet.com (قبلاً moristyle.business.nobatet.com)
  */
 export const businesses = pgTable(
   'businesses',
@@ -69,6 +70,9 @@ export const businesses = pgTable(
     cardHolderName: varchar('card_holder_name', { length: 120 }),
     /** کد معرف ویزیتور در زمان ثبت‌نام */
     referralCode: varchar('referral_code', { length: 32 }),
+    /** دامنه اختصاصی (BYO domain) - مثل salon.com یا app.salon.com - برای فاز custom domain */
+    customDomain: varchar('custom_domain', { length: 120 }),
+    customDomainVerified: boolean('custom_domain_verified').notNull().default(false),
     isActive: boolean('is_active').notNull().default(true),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

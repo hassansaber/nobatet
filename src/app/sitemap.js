@@ -32,7 +32,7 @@ export default async function sitemap() {
         .limit(100);
 
       businessRoutes = rows.map((b) => ({
-        url: `https://${b.slug}.business.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'nobatet.com'}`,
+        url: `https://${b.slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'nobatet.com'}`,
         lastModified: b.updatedAt || new Date(),
         changeFrequency: 'weekly',
         priority: 0.8,

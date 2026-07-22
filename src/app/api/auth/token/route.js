@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getCorsHeaders, getCorsPreflightHeaders } from '@/lib/cors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const SESSION_COOKIE = 'nobatet_session';
-
-function getCorsHeaders(request) {
-  const origin = request.headers.get('origin') || '';
-  const headers = { Vary: 'Origin' };
-  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
-    headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Credentials'] = 'true';
-  }
-  return headers;
-}
 
 export async function GET(request) {
   try {
@@ -32,13 +23,6 @@ export async function GET(request) {
 }
 
 export async function OPTIONS(request) {
-  const origin = request.headers.get('origin') || '';
-  const headers = { Vary: 'Origin' };
-  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
-    headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Credentials'] = 'true';
-    headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
-  }
+  const headers = getCorsPreflightHeaders(request);
   return new NextResponse(null, { status: 204, headers });
 }

@@ -73,7 +73,7 @@ export default async function BusinessDashboardPage() {
       label: 'لینک لندینگ',
       value: biz ? tenantHost('business', biz.slug) : '—',
       hint: biz
-        ? `${biz.slug}.business.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'nobatet.com'}`
+        ? `${biz.slug}.${process.env.NEXT_PUBLIC_BASE_DOMAIN || 'nobatet.com'}`
         : 'بیزنس بسازید',
     },
   ];

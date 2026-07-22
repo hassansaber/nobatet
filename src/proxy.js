@@ -3,9 +3,6 @@ import { jwtVerify } from 'jose';
 
 const SESSION_COOKIE = 'nobatet_session';
 
-/**
- * مسیرهای محافظت‌شده با تابع check به جای آرایه role (طراحی جدید multi-role)
- */
 const PROTECTED = [
   {
     prefix: '/admin',
@@ -36,13 +33,24 @@ const PROTECTED = [
   },
   {
     prefix: '/me',
-    check: () => true, // هر کاربر لاگین‌شده
+    check: () => true,
   },
   {
     prefix: '/choose-workspace',
     check: () => true,
   },
 ];
+
+// اسلاگ‌های رزرو - نباید tenant باشند
+const RESERVED = new Set([
+  'www', 'api', 'app', 'admin', 'dashboard', 'panel', 'root', 'system',
+  'business', 'visitor', 'auth', 'login', 'register', 'logout', 'me', 'choose-workspace',
+  'demo', 'test', 'staging', 'dev',
+  'mail', 'ftp', 'cdn', 'assets', 'static', 'blog', 'docs', 'help', 'support', 'status', 'health',
+  'billing', 'payment', 'pay', 'pricing', 'plans',
+  'abuse', 'security', 'legal', 'privacy', 'terms',
+  'nobatet', 'nobat',
+]);
 
 export async function proxy(request) {
   const { pathname } = request.nextUrl;
@@ -68,10 +76,12 @@ export async function proxy(request) {
     pathname.startsWith('/choose-workspace') ||
     isStaticFile;
 
+  // فقط اگر مسیر عمومی است، tenant را چک کن
   if (!isInternal) {
     const tenant = extractTenant(host, baseDomain);
     if (tenant) {
       const url = request.nextUrl.clone();
+      // نسخه جدید: /sites/[type]/[slug] - type می‌تواند auto باشد
       url.pathname = `/sites/${tenant.type}/${tenant.slug}${pathname === '/' ? '' : pathname}`;
       const res = NextResponse.rewrite(url);
       res.headers.set('x-tenant-slug', tenant.slug);
@@ -112,36 +122,84 @@ export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 };
 
+/**
+ * استخراج tenant - نسخه جدید تک سطحی
+ * جدید: moristyle.nobatet.com => {slug: moristyle, type: business(auto)}
+ * قدیم (سازگار): moristyle.business.nobatet.com => {slug: moristyle, type: business}
+ */
 function extractTenant(host, baseDomain) {
-  const hostname = host.split(':')[0].toLowerCase();
-  const baseHost = baseDomain.split(':')[0].toLowerCase();
+  const hostname = host.split(':')[0].toLowerCase().trim();
+  const baseHost = baseDomain.split(':')[0].toLowerCase().trim();
 
-  if (hostname === baseHost || hostname === 'localhost' || hostname === '127.0.0.1') return null;
+  if (!hostname || hostname === baseHost || hostname === 'localhost' || hostname === '127.0.0.1') return null;
 
-  const businessMarkers = [`.business.${baseHost}`, '.business.localhost'];
-  for (const marker of businessMarkers) {
+  // --- سازگاری با الگوی قدیمی تودرتو ---
+  // moristyle.business.nobatet.com
+  const oldBusinessMarkers = [`.business.${baseHost}`, '.business.localhost', '.business.lvh.me'];
+  for (const marker of oldBusinessMarkers) {
     if (hostname.endsWith(marker)) {
       const slug = hostname.slice(0, -marker.length);
-      if (slug && !slug.includes('.')) return { type: 'business', slug };
+      if (slug && !slug.includes('.') && !RESERVED.has(slug) && slug.length >= 3) {
+        return { type: 'business', slug };
+      }
+    }
+  }
+  const oldVisitorMarkers = [`.visitor.${baseHost}`, '.visitor.localhost', '.visitor.lvh.me'];
+  for (const marker of oldVisitorMarkers) {
+    if (hostname.endsWith(marker)) {
+      const slug = hostname.slice(0, -marker.length);
+      if (slug && !slug.includes('.') && !RESERVED.has(slug) && slug.length >= 3) {
+        return { type: 'visitor', slug };
+      }
     }
   }
 
-  const visitorMarkers = [`.visitor.${baseHost}`, '.visitor.localhost'];
-  for (const marker of visitorMarkers) {
-    if (hostname.endsWith(marker)) {
-      const slug = hostname.slice(0, -marker.length);
-      if (slug && !slug.includes('.')) return { type: 'visitor', slug };
-    }
-  }
-
+  // --- الگوی قدیمی .localhost تک سطحی ---
   if (hostname.endsWith('.localhost')) {
-    const slug = hostname.replace(/\.localhost$/, '');
-    if (slug && !slug.includes('.')) return { type: 'business', slug };
+    const sub = hostname.replace(/\.localhost$/, '');
+    // اگر هنوز نقطه دارد، مثل demo.business که بالا هندل شد، اینجا نادیده بگیر
+    if (!sub.includes('.') && sub && !RESERVED.has(sub) && sub.length >= 3) {
+      return { type: 'business', slug: sub };
+    }
   }
 
+  if (hostname.endsWith('.lvh.me')) {
+    const sub = hostname.replace(/\.lvh\.me$/, '');
+    if (!sub.includes('.') && sub && !RESERVED.has(sub) && sub.length >= 3) {
+      return { type: 'business', slug: sub };
+    }
+    // اگر sub مثل demo.business شامل نقطه بود، دوباره چک
+    const parts = sub.split('.');
+    if (parts.length === 2 && ['business', 'visitor'].includes(parts[1])) {
+      const slug = parts[0];
+      if (slug && !RESERVED.has(slug) && slug.length >= 3) {
+        return { type: parts[1], slug };
+      }
+    }
+  }
+
+  // --- الگوی جدید تک سطحی: moristyle.nobatet.com ---
   if (hostname.endsWith(`.${baseHost}`)) {
-    const sub = hostname.slice(0, -(baseHost.length + 1));
-    if (sub && !sub.includes('.') && !['www', 'api', 'app', 'admin', 'business', 'visitor'].includes(sub)) {
+    const sub = hostname.slice(0, -(baseHost.length + 1)); // moristyle یا moristyle.business
+    
+    if (!sub) return null;
+    
+    // اگر sub شامل نقطه است، احتمالاً الگوی قدیمی است که بالا هندل نشده (مثلاً demo.business)
+    if (sub.includes('.')) {
+      const parts = sub.split('.');
+      // فقط دو بخشی را قبول کن
+      if (parts.length === 2 && ['business', 'visitor'].includes(parts[1])) {
+        const slug = parts[0];
+        if (slug && !RESERVED.has(slug) && slug.length >= 3) {
+          return { type: parts[1], slug };
+        }
+      }
+      return null;
+    }
+
+    // تک سطحی جدید: moristyle
+    if (!RESERVED.has(sub) && sub.length >= 3 && /^[a-z0-9-]+$/.test(sub)) {
+      // type را auto می‌گذاریم، صفحه لندینگ خودش تشخیص می‌دهد business است یا visitor
       return { type: 'business', slug: sub };
     }
   }

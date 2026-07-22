@@ -15,6 +15,7 @@ import { users } from '@/db/schema/users';
 import { bookings } from '@/db/schema/bookings';
 import { slugify } from '@/lib/utils';
 import { incrementTokenVersion } from '@/lib/auth';
+import { validateAndNormalizeSlug } from '@/lib/slug-blocklist';
 
 // ─── Plans ──────────────────────────────────────────────
 
@@ -330,11 +331,18 @@ export async function ensureVisitorProfile(userId, data = {}) {
     .limit(1);
   if (!user) return { ok: false, error: 'کاربر یافت نشد' };
 
-  let slug =
-    slugify(data.slug || `${user.firstName || ''}-${user.lastName || ''}`) ||
-    `v-${user.phone.slice(-4)}`;
-  const clash = await getVisitorBySlug(slug);
-  if (clash) slug = `${slug}-${Date.now().toString(36).slice(-3)}`;
+  let rawSlug = data.slug || `${user.firstName || ''}-${user.lastName || ''}` || `v-${user.phone.slice(-4)}`;
+  let validated = validateAndNormalizeSlug(rawSlug);
+  let slug = validated.ok ? validated.slug : `v-${user.phone.slice(-4)}-${Date.now().toString(36).slice(-3)}`;
+
+  // چک یکتایی در visitors و businesses (تک سطحی)
+  const clashVisitor = await getVisitorBySlug(slug);
+  if (clashVisitor) slug = `${slug}-${Date.now().toString(36).slice(-3)}`;
+  else {
+    const { businesses } = await import('@/db/schema/businesses.js');
+    const [clashBiz] = await db.select({ id: businesses.id }).from(businesses).where(eq(businesses.slug, slug)).limit(1);
+    if (clashBiz) slug = `${slug}-${Date.now().toString(36).slice(-3)}`;
+  }
 
   const referralCode =
     data.referralCode ||
@@ -373,14 +381,19 @@ export async function updateVisitorProfile(userId, data) {
   const patch = {};
   if (data.bio !== undefined) patch.bio = data.bio;
   if (data.slug) {
-    const s = slugify(data.slug);
-    if (s) {
-      const clash = await getVisitorBySlug(s);
-      if (clash && clash.id !== v.id) {
-        return { ok: false, error: 'این اسلاگ گرفته شده' };
-      }
-      patch.slug = s;
+    const validated = validateAndNormalizeSlug(data.slug);
+    if (!validated.ok) return { ok: false, error: validated.error };
+    const s = validated.slug;
+    const clash = await getVisitorBySlug(s);
+    if (clash && clash.id !== v.id) {
+      return { ok: false, error: 'این اسلاگ در ویزیتورها گرفته شده' };
     }
+    const { businesses } = await import('@/db/schema/businesses.js');
+    const [clashBiz] = await db.select({ id: businesses.id }).from(businesses).where(eq(businesses.slug, s)).limit(1);
+    if (clashBiz) {
+      return { ok: false, error: 'این اسلاگ در بیزنس‌ها گرفته شده (تک سطحی moristyle.nobatet.com باید یکتا باشد)' };
+    }
+    patch.slug = s;
   }
 
   const [row] = await db

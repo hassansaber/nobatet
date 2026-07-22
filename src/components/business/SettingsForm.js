@@ -83,9 +83,9 @@ export function SettingsForm() {
   if (loading || !form) return <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>;
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'localhost:3001';
-  const isLocal = baseDomain.includes('localhost') || baseDomain.startsWith('127.');
+  const isLocal = baseDomain.includes('localhost') || baseDomain.startsWith('127.') || baseDomain.includes('lvh.me');
   const protocol = isLocal ? 'http' : 'https';
-  const landingUrl = `${form.slug || 'demo'}.business.${baseDomain}`;
+  const landingUrl = `${form.slug || 'demo'}.${baseDomain}`;
   const qrData = `${protocol}://${landingUrl}`;
 
   return (
@@ -117,7 +117,7 @@ export function SettingsForm() {
         <CardContent className="space-y-3">
           <div className="grid sm:grid-cols-2 gap-3">
             <Input label="نام کسب‌وکار" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <Input label="اسلاگ ساب‌دامین" dir="ltr" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} hint={`${form.slug || '...'}.business.nobatet.com`} />
+            <Input label="اسلاگ ساب‌دامین" dir="ltr" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} hint={`${form.slug || '...'}.nobatet.com`} />
             <Input label="شهر" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
             <Input label="تلفن" dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           </div>

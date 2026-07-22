@@ -149,7 +149,7 @@ export function DashboardShell({ children, title, role: roleProp }) {
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'localhost:3001';
   const isLocal = baseDomain.includes('localhost') || baseDomain.startsWith('127.');
   const protocol = isLocal ? 'http' : 'https';
-  const businessLandingUrl = businessSlug ? `${protocol}://${businessSlug}.business.${baseDomain}` : null;
+  const businessLandingUrl = businessSlug ? `${protocol}://${businessSlug}.${baseDomain}` : null;
   const mainAppUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${baseDomain}`;
 
   async function handleLogout() {

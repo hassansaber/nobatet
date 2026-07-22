@@ -23,9 +23,9 @@ export function QrGenerator() {
   if (!business) return <p className="text-sm text-red-600">کسب‌وکار یافت نشد</p>;
 
   const base = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'localhost:3001';
-  const isLocal = base.includes('localhost') || base.startsWith('127.');
+  const isLocal = base.includes('localhost') || base.startsWith('127.') || base.includes('lvh.me');
   const protocol = isLocal ? 'http' : 'https';
-  const url = `${protocol}://${business.slug}.business.${base}`;
+  const url = `${protocol}://${business.slug}.${base}`;
   const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(url)}`;
   const qrHd = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`;
 
@@ -63,7 +63,7 @@ export function QrGenerator() {
       <Card className="bg-teal-50 border-teal-200">
         <CardContent className="py-4 text-xs flex items-start gap-2">
           <Lightbulb className="size-4 text-amber-600 shrink-0 mt-0.5" />
-          <span>نکته: این QR به لندینگ {business.slug}.business.{base} اشاره دارد که در تنظیمات قابل تغییر است (اسلاگ). اگر اسلاگ رو عوض کنی QR جدید بساز.</span>
+          <span>نکته: این QR به لندینگ {business.slug}.{base} اشاره دارد که در تنظیمات قابل تغییر است (اسلاگ). اگر اسلاگ رو عوض کنی QR جدید بساز.</span>
         </CardContent>
       </Card>
     </div>

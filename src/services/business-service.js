@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gte, isNull, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { businesses, businessMembers } from '@/db/schema/businesses';
+import { businesses, businessMembers, visitors } from '@/db/schema/businesses';
 import {
   services,
   staffServices,
@@ -11,6 +11,7 @@ import { users } from '@/db/schema/users';
 import { bookings } from '@/db/schema/bookings';
 import { hashPassword, incrementTokenVersion } from '@/lib/auth';
 import { normalizeIranPhone, slugify } from '@/lib/utils';
+import { isReservedSlug, validateAndNormalizeSlug } from '@/lib/slug-blocklist';
 
 export async function getBusinessBySlug(slug) {
   const [biz] = await db
@@ -110,8 +111,20 @@ export async function createBusiness({
   let slug = slugify(rawSlug || name);
   if (!slug) slug = `biz-${Date.now().toString(36)}`;
 
-  const existing = await getBusinessBySlug(slug);
-  if (existing) {
+  // اعتبارسنجی اسلاگ با blocklist
+  const validated = validateAndNormalizeSlug(slug);
+  if (!validated.ok) {
+    // اگر رزرو بود، یک suffix اضافه کن
+    const base = validated.slug || slugify(name) || 'biz';
+    slug = `${base}-${Date.now().toString(36).slice(-4)}`;
+  } else {
+    slug = validated.slug;
+  }
+
+  // چک یکتایی در businesses و visitors (تک سطحی جدید: moristyle.nobatet.com باید در هر دو جدول یکتا باشد)
+  const [existingBiz] = await db.select({ id: businesses.id }).from(businesses).where(eq(businesses.slug, slug)).limit(1);
+  const [existingVisitor] = await db.select({ id: visitors.id }).from(visitors).where(eq(visitors.slug, slug)).limit(1);
+  if (existingBiz || existingVisitor) {
     slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
   }
 
@@ -585,14 +598,21 @@ export async function updateBusinessSettings(businessId, data) {
     patch.landingFeatures = data.landingFeatures;
   }
   if (data.slug) {
-    const s = slugify(data.slug);
-    if (s) {
-      const clash = await getBusinessBySlug(s);
-      if (clash && clash.id !== businessId) {
-        return { ok: false, error: 'این اسلاگ قبلاً گرفته شده' };
-      }
-      patch.slug = s;
+    const validated = validateAndNormalizeSlug(data.slug);
+    if (!validated.ok) {
+      return { ok: false, error: validated.error };
     }
+    const s = validated.slug;
+    // چک یکتایی در businesses و visitors
+    const clashBiz = await db.select({ id: businesses.id }).from(businesses).where(eq(businesses.slug, s)).limit(1);
+    if (clashBiz[0] && clashBiz[0].id !== businessId) {
+      return { ok: false, error: 'این اسلاگ قبلاً در بیزنس‌ها گرفته شده' };
+    }
+    const clashVisitor = await db.select({ id: visitors.id }).from(visitors).where(eq(visitors.slug, s)).limit(1);
+    if (clashVisitor[0]) {
+      return { ok: false, error: 'این اسلاگ قبلاً در ویزیتورها گرفته شده (تک سطحی moristyle.nobatet.com باید یکتا باشد)' };
+    }
+    patch.slug = s;
   }
 
   const [row] = await db

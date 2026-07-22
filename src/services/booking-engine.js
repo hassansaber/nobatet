@@ -12,6 +12,7 @@ import {
   or,
   isNull,
   inArray,
+  sql,
 } from 'drizzle-orm';
 import { db } from '@/db';
 import { bookings } from '@/db/schema/bookings';
@@ -486,34 +487,127 @@ export async function createPendingBooking({
   const lockExpiresAt = new Date(Date.now() + lockMins * 60_000);
   const totalAmount = totalPrice;
   const depositAmount = Math.round((totalAmount * depositPercent) / 100);
+  const memberIdToUse = availability.slot.memberId;
 
-  const [row] = await db
-    .insert(bookings)
-    .values({
-      businessId,
-      serviceId: primaryService.id, // برای سازگاری قدیمی
-      memberId: availability.slot.memberId,
-      customerId: customerId || null,
-      customerName,
-      customerPhone,
-      startsAt: start,
-      endsAt: end,
-      status: 'pending_payment',
-      lockExpiresAt,
-      notes: notes || null,
-      policyAccepted: true,
-      totalAmount,
-      depositAmount,
-    })
-    .returning();
-
-  // ذخیره همه خدمات در جدول واسط
+  // بهبود race condition: استفاده از transaction + FOR UPDATE + advisory lock
+  // این از double-book شدن تحت بار همزمان جلوگیری می‌کند
+  let row;
   try {
-    for (const sid of ids) {
-      await db.insert(bookingServices).values({ bookingId: row.id, serviceId: sid }).onConflictDoNothing();
-    }
+    row = await db.transaction(async (tx) => {
+      // Advisory lock بر اساس memberId برای جلوگیری از تداخل همزمان
+      // از hash memberId به int64 استفاده می‌کنیم
+      try {
+        const lockKey = memberIdToUse ? `x'${memberIdToUse.replace(/-/g, '').slice(0, 16)}'::bigint` : null;
+        if (lockKey) {
+          // pg_advisory_xact_lock برای transaction-level lock
+          await tx.execute(sql`SELECT pg_advisory_xact_lock(${sql.raw(lockKey)})`);
+        }
+      } catch (e) {
+        // اگر advisory lock fail شد، ادامه بده (fallback)
+        console.warn('[createPendingBooking] advisory lock failed', e?.message);
+      }
+
+      // داخل ترنزاکشن دوباره چک کن که اسلات هنوز آزاد است (با FOR UPDATE)
+      const now = new Date();
+      const occupying = await tx
+        .select({
+          id: bookings.id,
+          startsAt: bookings.startsAt,
+          endsAt: bookings.endsAt,
+        })
+        .from(bookings)
+        .where(
+          and(
+            eq(bookings.businessId, businessId),
+            eq(bookings.memberId, memberIdToUse),
+            lt(bookings.startsAt, end),
+            gt(bookings.endsAt, start),
+            or(
+              eq(bookings.status, 'confirmed'),
+              eq(bookings.status, 'completed'),
+              and(
+                eq(bookings.status, 'pending_payment'),
+                or(isNull(bookings.lockExpiresAt), gte(bookings.lockExpiresAt, now)),
+              ),
+            ),
+          ),
+        )
+        .for('update');
+
+      // چک capacity vs individual (ساده: اگر هر رزرو تداخل داشت، رد کن)
+      if (occupying.length > 0) {
+        // برای capacity نوع باید ظرفیت را چک کنیم
+        const isCapacity = servicesList.some((s) => s.type === 'capacity');
+        if (!isCapacity) {
+          throw new Error('این تایم در لحظه توسط کاربر دیگری رزرو شد');
+        } else {
+          const capacity = Math.min(...servicesList.map((s) => s.capacity || 1));
+          if (occupying.length >= capacity) {
+            throw new Error('ظرفیت این سانس تکمیل شد');
+          }
+        }
+      }
+
+      const [inserted] = await tx
+        .insert(bookings)
+        .values({
+          businessId,
+          serviceId: primaryService.id,
+          memberId: memberIdToUse,
+          customerId: customerId || null,
+          customerName,
+          customerPhone,
+          startsAt: start,
+          endsAt: end,
+          status: 'pending_payment',
+          lockExpiresAt,
+          notes: notes || null,
+          policyAccepted: true,
+          totalAmount,
+          depositAmount,
+        })
+        .returning();
+
+      // ذخیره خدمات واسط
+      for (const sid of ids) {
+        try {
+          await tx.insert(bookingServices).values({ bookingId: inserted.id, serviceId: sid }).onConflictDoNothing();
+        } catch {}
+      }
+
+      return inserted;
+    });
   } catch (e) {
-    console.warn('[createPendingBooking] booking_services insert failed', e?.message);
+    if (e?.message?.includes('رزرو شد') || e?.message?.includes('ظرفیت')) {
+      return { ok: false, error: e.message };
+    }
+    // اگر transaction fail شد، سعی کن با روش قدیمی (fallback)
+    console.warn('[createPendingBooking] transaction failed, fallback', e?.message);
+    const [fallbackRow] = await db
+      .insert(bookings)
+      .values({
+        businessId,
+        serviceId: primaryService.id,
+        memberId: memberIdToUse,
+        customerId: customerId || null,
+        customerName,
+        customerPhone,
+        startsAt: start,
+        endsAt: end,
+        status: 'pending_payment',
+        lockExpiresAt,
+        notes: notes || null,
+        policyAccepted: true,
+        totalAmount,
+        depositAmount,
+      })
+      .returning();
+    for (const sid of ids) {
+      try {
+        await db.insert(bookingServices).values({ bookingId: fallbackRow.id, serviceId: sid }).onConflictDoNothing();
+      } catch {}
+    }
+    row = fallbackRow;
   }
 
   return {

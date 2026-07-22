@@ -1,21 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-
-function corsHeaders(request) {
-  const origin = request?.headers?.get('origin') || '';
-  const h = { Vary: 'Origin' };
-  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
-    h['Access-Control-Allow-Origin'] = origin;
-    h['Access-Control-Allow-Credentials'] = 'true';
-  }
-  return h;
-}
+import { getCorsHeaders, getCorsPreflightHeaders } from '@/lib/cors';
 
 export async function GET(request) {
   try {
     const session = await getSession();
-    const headers = corsHeaders(request);
-
+    const headers = getCorsHeaders(request);
     if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers });
 
     const dashboards = [];
@@ -27,7 +17,7 @@ export async function GET(request) {
         role: 'super_admin',
         roleLabel: 'سوپرادمین',
         title: 'پنل سوپرادمین',
-        desc: 'مدیریت کل پلتفرم، بیزنس‌ها، پلن‌ها، ویزیتورها',
+        desc: 'مدیریت کل پلتفرم',
         href: '/admin',
         redirectTo: '/admin',
         icon: 'crown',
@@ -41,7 +31,7 @@ export async function GET(request) {
         role: 'visitor',
         roleLabel: 'بازاریاب',
         title: 'پنل بازاریاب',
-        desc: 'لینک اختصاصی، کمیسیون، بیزنس‌های جذب‌شده',
+        desc: 'لینک اختصاصی، کمیسیون',
         href: '/visitor',
         redirectTo: '/visitor',
         icon: 'handshake',
@@ -74,7 +64,7 @@ export async function GET(request) {
         role: 'customer',
         roleLabel: 'مشتری',
         title: 'پنل مشتری',
-        desc: 'نوبت‌های من، تاریخچه، علاقه‌مندی‌ها',
+        desc: 'نوبت‌های من',
         href: '/me',
         redirectTo: '/me',
         icon: 'user',
@@ -82,37 +72,27 @@ export async function GET(request) {
       });
     }
 
-    return NextResponse.json(
-      {
-        ok: true,
-        session: {
-          sub: session.sub,
-          phone: session.phone,
-          firstName: session.firstName,
-          lastName: session.lastName,
-          globalRoles: session.globalRoles,
-          memberships: session.memberships,
-        },
-        dashboards,
-        total: dashboards.length,
+    return NextResponse.json({
+      ok: true,
+      session: {
+        sub: session.sub,
+        phone: session.phone,
+        firstName: session.firstName,
+        lastName: session.lastName,
+        globalRoles: session.globalRoles,
+        memberships: session.memberships,
       },
-      { headers },
-    );
+      dashboards,
+      total: dashboards.length,
+    }, { headers });
   } catch (err) {
     console.error('[workspaces]', err);
-    const headers = corsHeaders(request);
+    const headers = getCorsHeaders(request);
     return NextResponse.json({ ok: false, error: 'خطای سرور' }, { status: 500, headers });
   }
 }
 
 export async function OPTIONS(request) {
-  const origin = request.headers.get('origin') || '';
-  const headers = { Vary: 'Origin' };
-  if (origin && (origin.includes('localhost') || origin.includes('nobatet.com') || origin.includes('lvh.me'))) {
-    headers['Access-Control-Allow-Origin'] = origin;
-    headers['Access-Control-Allow-Credentials'] = 'true';
-    headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS';
-    headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
-  }
+  const headers = getCorsPreflightHeaders(request);
   return new NextResponse(null, { status: 204, headers });
 }

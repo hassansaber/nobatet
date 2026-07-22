@@ -33,7 +33,7 @@ const featureCards = [
 const moreFeatures = [
   {
     title: 'ساب‌دامین اختصاصی',
-    desc: 'salon.business.nobatet.com — حس برند واقعی بدون وب‌سایت جدا.',
+    desc: 'moristyle.nobatet.com — حس برند واقعی بدون وب‌سایت جدا.',
     icon: Globe,
   },
   {
