@@ -69,6 +69,56 @@ export async function GET(request) {
   }
 }
 
+// POST - افزودن دستی نوبت (Quick Add) - برای مالک/منشی - حضوری بدون پرداخت
+export async function POST(request) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+
+    const body = await request.json();
+    const { businessId: bId, customerName, customerPhone, serviceId, memberId, startsAt, endsAt, totalAmount, notes } = body;
+
+    let businessId = bId;
+    if (!businessId) {
+      const list = await getBusinessesForUser(session.sub);
+      businessId = list[0]?.id;
+    }
+    if (!businessId) return NextResponse.json({ ok: false, error: 'بیزنسی یافت نشد' }, { status: 404 });
+
+    const access = await assertBusinessAccess(businessId, session.sub, ['owner', 'manager', 'staff']);
+    if (!access && !(session.globalRoles?.includes('super_admin') || session.role === 'super_admin')) {
+      return NextResponse.json({ ok: false, error: 'دسترسی ندارید' }, { status: 403 });
+    }
+
+    if (!customerName || !customerPhone || !startsAt) {
+      return NextResponse.json({ ok: false, error: 'نام، موبایل و زمان الزامی است' }, { status: 400 });
+    }
+
+    const start = new Date(startsAt);
+    const end = endsAt ? new Date(endsAt) : new Date(start.getTime() + 60 * 60 * 1000);
+
+    const [row] = await db.insert(bookings).values({
+      businessId,
+      serviceId: serviceId || null,
+      memberId: memberId || null,
+      customerName: customerName.trim(),
+      customerPhone: customerPhone.trim(),
+      startsAt: start,
+      endsAt: end,
+      status: 'confirmed',
+      totalAmount: Number(totalAmount || 0),
+      depositAmount: 0,
+      notes: notes || 'رزرو دستی - حضوری',
+      policyAccepted: true,
+    }).returning();
+
+    return NextResponse.json({ ok: true, booking: row });
+  } catch (err) {
+    console.error('[api/business/bookings POST]', err);
+    return NextResponse.json({ ok: false, error: 'خطای سرور: ' + err?.message }, { status: 500 });
+  }
+}
+
 export async function PATCH(request) {
   try {
     const session = await getSession();

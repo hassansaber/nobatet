@@ -9,6 +9,8 @@ import { bookings } from '@/db/schema/bookings';
 import { formatRial } from '@/lib/utils';
 import { businessUrl, tenantHost } from '@/lib/tenant-url';
 import { BusinessDashboardCharts } from '@/components/business/BusinessDashboardCharts';
+import { BusinessRecentAndQuickAdd } from '@/components/business/BusinessRecentAndQuickAdd';
+import { OnboardingWizard } from '@/components/business/OnboardingWizard';
 
 export const metadata = { title: 'پنل کسب‌وکار' };
 
@@ -112,6 +114,10 @@ export default async function BusinessDashboardPage() {
 
         {biz && <BusinessDashboardCharts businessId={biz.id} />}
 
+        {biz && <OnboardingWizard business={biz} />}
+
+        {biz && <BusinessRecentAndQuickAdd businessId={biz.id} />}
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { href: '/business/bookings', t: 'رزروها', d: 'تأیید، لغو، انجام‌شد' },
@@ -121,10 +127,14 @@ export default async function BusinessDashboardPage() {
             { href: '/business/schedule', t: 'زمان‌بندی', d: 'ساعات کاری و مرخصی' },
             { href: '/business/customers', t: 'CRM', d: 'تگ، VIP، یادداشت' },
             { href: '/business/loyalty', t: 'باشگاه', d: 'امتیاز و کد تخفیف' },
+            { href: '/business/waitlist', t: 'لیست انتظار', d: 'وقتی اسلات پر است - جدید' },
+            { href: '/business/gift-cards', t: 'کارت هدیه', d: 'کد هدیه با موجودی - جدید' },
+            { href: '/business/invites', t: 'دعوت تیم', d: 'لینک دعوت RBAC پیشرفته - جدید' },
+            { href: '/business/domain', t: 'دامنه اختصاصی', d: 'moristyle.com → لندینگ - جدید' },
             { href: '/business/expenses', t: 'حسابداری', d: 'هزینه‌ها و سود' },
             { href: '/business/qr', t: 'QR کد', d: 'چاپ QR لندینگ' },
             { href: '/business/reports', t: 'گزارش‌ها', d: 'درآمد و آمار نموداری' },
-            { href: '/business/settings', t: 'تنظیمات', d: 'لوگو، بنر، گالری، نقشه + QR' },
+            { href: '/business/settings', t: 'تنظیمات', d: 'تب‌ها + ذخیره خودکار - جدید' },
             ...(biz
               ? [
                   {

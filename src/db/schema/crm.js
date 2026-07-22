@@ -140,3 +140,43 @@ export const discountCodes = pgTable(
     uniqueIndex('discount_codes_biz_code').on(table.businessId, table.code),
   ],
 );
+
+/**
+ * لیست انتظار - وقتی اسلات پر است
+ */
+export const waitlist = pgTable(
+  'waitlist',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+    serviceId: uuid('service_id'),
+    customerPhone: varchar('customer_phone', { length: 11 }).notNull(),
+    customerName: varchar('customer_name', { length: 120 }),
+    desiredDate: timestamp('desired_date', { withTimezone: true }),
+    desiredTime: varchar('desired_time', { length: 10 }),
+    status: varchar('status', { length: 20 }).notNull().default('waiting'), // waiting | contacted | converted | cancelled
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [index('waitlist_biz_status').on(table.businessId, table.status)]
+);
+
+/**
+ * کارت هدیه
+ */
+export const giftCards = pgTable(
+  'gift_cards',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    businessId: uuid('business_id').notNull().references(() => businesses.id, { onDelete: 'cascade' }),
+    code: varchar('code', { length: 16 }).notNull(),
+    amount: integer('amount').notNull(),
+    balance: integer('balance').notNull(),
+    customerPhone: varchar('customer_phone', { length: 11 }),
+    customerName: varchar('customer_name', { length: 120 }),
+    isActive: boolean('is_active').notNull().default(true),
+    expiresAt: timestamp('expires_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('gift_cards_biz_code').on(table.businessId, table.code)]
+);

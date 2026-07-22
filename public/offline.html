@@ -2,16 +2,15 @@
 <html lang="fa" dir="rtl">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0284C7" />
     <title>آفلاین | نوبتت</title>
     <style>
-      *{box-sizing:border-box}
+      *{box-sizing:border-box;margin:0;padding:0}
       body {
         font-family: Vazirmatn, Tahoma, sans-serif;
-        background: #F0F9FF;
+        background: radial-gradient(ellipse at top right, #ccfbf1 0%, transparent 60%), radial-gradient(ellipse at bottom left, #e0f2fe 0%, transparent 50%), #f8fafc;
         color: #0F172A;
-        margin: 0;
         min-height: 100dvh;
         display: flex;
         align-items: center;
@@ -20,47 +19,70 @@
         text-align: center;
       }
       .card {
-        background: rgba(255,255,255,0.7);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.5);
-        border-radius: 20px;
-        padding: 28px 22px;
-        max-width: 360px;
+        background: rgba(255,255,255,0.8);
+        backdrop-filter: blur(24px);
+        border: 1px solid rgba(255,255,255,0.6);
+        border-radius: 24px;
+        padding: 32px 24px;
+        max-width: 380px;
         width: 100%;
-        box-shadow: 0 8px 32px rgba(2,132,199,0.12);
+        box-shadow: 0 20px 60px rgba(2,132,199,0.15), 0 4px 20px rgba(0,0,0,0.05);
       }
-      h1 { font-size: 1.1rem; margin: 0 0 8px; font-weight: 600; }
-      p { color: #475569; font-size: 0.85rem; line-height: 1.8; margin: 0 0 18px; }
+      .icon {
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #0284C7 0%, #0EA5E9 100%);
+        color: white;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 24px;
+        box-shadow: 0 8px 20px rgba(2,132,199,0.3);
+      }
+      h1 { font-size: 1.25rem; margin: 0 0 8px; font-weight: 800; letter-spacing: -0.02em; }
+      p { color: #475569; font-size: 0.9rem; line-height: 1.9; margin: 0 0 20px; }
       .btn {
         background: #0284C7;
         color: #fff;
         border: 0;
-        border-radius: 12px;
-        height: 40px;
-        padding: 0 18px;
-        font-weight: 500;
+        border-radius: 14px;
+        height: 44px;
+        padding: 0 20px;
+        font-weight: 700;
         cursor: pointer;
         width: 100%;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(2,132,199,0.25);
       }
+      .btn:active { transform: scale(0.98); }
       .btn-secondary {
         background: white;
         color: #0F172A;
-        border: 1px solid #E0F0F8;
-        margin-top: 8px;
+        border: 1px solid #e2e8f0;
+        margin-top: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
       }
+      .hint { margin-top: 16px; font-size: 0.75rem; color: #94a3b8; }
     </style>
   </head>
   <body>
     <div class="card">
-      <div style="width:48px;height:48px;background:#0284C71A;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#0284C7">!</div>
+      <div class="icon">!</div>
       <h1>اتصال برقرار نیست</h1>
       <p>
-        به نظر می‌رسد اینترنت شما قطع است. نوبتت به صورت محدود آفلاین کار می‌کند.<br/>
-        اگر این صفحه بعد از ورود نمایش داده می‌شود، لطفا کوکی‌ها را پاک و دوباره وارد شوید.
+        به نظر می‌رسد اینترنت شما قطع است یا سرور هاست اشتراکی در دسترس نیست.<br/>
+        نوبتت به صورت محدود آفلاین کار می‌کند. رزروهای اخیر شما ذخیره شده‌اند.
       </p>
       <button class="btn" onclick="location.reload()">تلاش مجدد</button>
       <button class="btn btn-secondary" onclick="location.href='/'">بازگشت به خانه</button>
+      <div class="hint">نکته cPanel: اگر این صفحه بعد از لاگین می‌آید، کوکی‌ها را پاک کنید یا با دامنه اصلی moristyle.nobatet.com وارد شوید.</div>
     </div>
+    <script>
+      // تلاش خودکار برای آنلاین شدن
+      window.addEventListener('online', () => location.reload());
+    </script>
   </body>
 </html>
