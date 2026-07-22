@@ -37,7 +37,7 @@ export function WaitlistManager() {
   return (
     <div className="space-y-4">
       <h1 className="text-lg font-black">لیست انتظار - وقتی تایم پر است</h1>
-      <p className="text-xs text-muted-foreground">مشتریانی که در لندینگ وقتی اسلات پر بود روی "در لیست انتظار بگذار" زدند.</p>
+      <p className="text-xs text-muted-foreground">مشتریانی که در لندینگ وقتی اسلات پر بود روی دکمه لیست انتظار زدند.</p>
       <Card><CardHeader><CardTitle className="text-sm">مشتریان در انتظار ({list.length})</CardTitle></CardHeader><CardContent className="space-y-2">
         {list.length === 0 && <p className="text-xs text-muted-foreground">لیست خالی است</p>}
         {list.map((w) => (
