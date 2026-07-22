@@ -3,10 +3,9 @@
  * شامل: زیرساخت، ادمین، کلمات زشت فارسی/انگلیسی، برندها
  */
 export const RESERVED_SLUGS = new Set([
-  // زیرساخت
+  // زیرساخت - demo و test برای تست مجاز هستند
   'www', 'api', 'app', 'admin', 'dashboard', 'panel', 'root', 'system', 'internal',
   'business', 'visitor', 'auth', 'login', 'register', 'logout', 'me', 'choose-workspace',
-  'demo', 'test', 'staging', 'dev', 'prod', 'production',
   'mail', 'email', 'smtp', 'ftp', 'sftp', 'ssh', 'vpn', 'ns1', 'ns2',
   'cdn', 'assets', 'static', 'public', 'private', 'images', 'img', 'js', 'css',
   'blog', 'docs', 'help', 'support', 'status', 'health', 'uptime',
@@ -14,9 +13,9 @@ export const RESERVED_SLUGS = new Set([
   'abuse', 'security', 'legal', 'privacy', 'terms', 'contact', 'about',
   'account', 'accounts', 'user', 'users', 'profile', 'settings',
   // فارسی رزرو
-  'modir', 'admin-fa', 'testfa',
+  'modir', 'admin-fa',
   // برند نوبتت
-  'nobatet', 'nobat', 'nobatam',
+  'nobatet', 'nobat',
   // عمومی
   'null', 'undefined', 'true', 'false', 'nil',
 ]);

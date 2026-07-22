@@ -41,11 +41,10 @@ const PROTECTED = [
   },
 ];
 
-// اسلاگ‌های رزرو - نباید tenant باشند
+// اسلاگ‌های رزرو - نباید tenant باشند (demo برای تست مجاز است)
 const RESERVED = new Set([
   'www', 'api', 'app', 'admin', 'dashboard', 'panel', 'root', 'system',
   'business', 'visitor', 'auth', 'login', 'register', 'logout', 'me', 'choose-workspace',
-  'demo', 'test', 'staging', 'dev',
   'mail', 'ftp', 'cdn', 'assets', 'static', 'blog', 'docs', 'help', 'support', 'status', 'health',
   'billing', 'payment', 'pay', 'pricing', 'plans',
   'abuse', 'security', 'legal', 'privacy', 'terms',

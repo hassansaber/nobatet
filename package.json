@@ -18,7 +18,8 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f app",
     "docker:seed": "docker compose exec app node scripts/seed.js",
-    "postbuild": "echo 'build complete'"
+    "postbuild": "echo 'build complete'",
+    "db:seed:realistic": "node scripts/seed-realistic.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

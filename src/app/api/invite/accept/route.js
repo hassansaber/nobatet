@@ -19,13 +19,6 @@ export async function POST(request) {
     if (invite.isAccepted) return NextResponse.json({ ok: false, error: 'قبلا پذیرفته شده' }, { status: 400 });
     if (new Date(invite.expiresAt) < new Date()) return NextResponse.json({ ok: false, error: 'منقضی شده' }, { status: 400 });
 
-    // آیا قبلا عضو است؟
-    const [existing] = await db.select().from(businessMembers).where(eq(businessMembers.businessId, invite.businessId)).then(async (all) => {
-      // فیلتر دستی
-      const found = all.find((m) => m.userId === session.sub);
-      return found ? [found] : [];
-    });
-
     // چک ساده عضویت
     const { and } = await import('drizzle-orm');
     const [memberExists] = await db.select().from(businessMembers).where(and(eq(businessMembers.businessId, invite.businessId), eq(businessMembers.userId, session.sub))).limit(1);
